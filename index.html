@@ -24,12 +24,14 @@
 </head>
 
 <body>
+    <audio id="beepAudio" src="beep.mp3"></audio> <!-- Provide path to your beep sound file -->
     <div id="enhancerUIContainer">
         <div id="square"></div>
     </div>
     <script>
         let enhancer = null;
         let isBeeping = false;
+        const beepAudio = document.getElementById('beepAudio');
 
         (async () => {
             enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
@@ -81,13 +83,16 @@
         }
 
         function startBeep() {
-            // Replace this with your beep logic
+            // Play the beep sound
+            beepAudio.play();
             console.log("Beep start");
             isBeeping = true;
         }
 
         function stopBeep() {
-            // Replace this with your beep logic
+            // Pause the beep sound
+            beepAudio.pause();
+            beepAudio.currentTime = 0; // Rewind to start
             console.log("Beep stop");
             isBeeping = false;
         }
