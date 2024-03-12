@@ -27,11 +27,18 @@
     <audio id="beepAudio" src="https://www.soundjay.com/button/beep-07.wav"></audio>
     <div id="enhancerUIContainer">
         <div id="square"></div>
+        <button id="playButton">Play Beep Sound</button>
     </div>
     <script>
         let enhancer = null;
         let isBeeping = false;
         const beepAudio = document.getElementById('beepAudio');
+        const playButton = document.getElementById('playButton');
+
+        // Event listener for the play button
+        playButton.addEventListener('click', () => {
+            beepAudio.play();
+        });
 
         (async () => {
             enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
