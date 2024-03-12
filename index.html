@@ -1,39 +1,125 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Hello Camera</title>
-    <script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Detection</title>
+<style>
+    #video {
+        width: 100%;
+        max-width: 100vw;
+        height: auto;
+    }
+
+    #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    #square {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200px;
+        height: 200px;
+        border: 2px solid red;
+        box-sizing: border-box;
+        display: none;
+    }
+</style>
 </head>
-
 <body>
-    <button id="capture">Capture</button>
-    <div id="enhancerUIContainer" style="height: 100vh;"></div>
+    <video id="video" autoplay></video>
+    <canvas id="overlay"></canvas>
+    <div id="square"></div>
+
     <script>
-        let enhancer = null;
-        (async () => {
-            enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
-            document.getElementById("enhancerUIContainer").appendChild(enhancer.getUIElement());
-            await enhancer.open(true);
-        })();
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('overlay');
+        const ctx = canvas.getContext('2d');
+        const square = document.getElementById('square');
+        const beepSound = new Audio('beep.mp3'); // Change the path to the beep sound file
+        let prevFrame = null;
 
-        document.getElementById('capture').onclick = () => {
-            if (enhancer) {
-                let frame = enhancer.getFrame();
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.onloadedmetadata = function(e) {
+                    video.play();
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    square.style.display = 'block';
+                    prevFrame = captureFrame();
+                    animate();
+                };
+            })
+            .catch(function(err) {
+                console.log("An error occurred: " + err);
+            });
 
-                let width = screen.availWidth;
-                let height = screen.availHeight;
-                let popW = 640, popH = 640;
-                let left = (width - popW) / 2;
-                let top = (height - popH) / 2;
+        function animate() {
+            const currentFrame = captureFrame();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                popWindow = window.open('', 'popup', 'width=' + popW + ',height=' + popH +
-                    ',top=' + top + ',left=' + left + ', scrollbars=yes');
+            // Draw the ROI square on the canvas
+            const roi = drawSquare();
 
-                popWindow.document.body.appendChild(frame.canvas);
+            // Detect motion within the ROI
+            if (prevFrame) {
+                const motionDetected = detectMotion(prevFrame, currentFrame, roi);
+                if (motionDetected) {
+                    beepSound.play();
+                }
             }
-        };
+
+            prevFrame = currentFrame;
+
+            requestAnimationFrame(animate);
+        }
+
+        function captureFrame() {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawSquare() {
+            const roi = {
+                x: canvas.width / 2 - 100,
+                y: canvas.height / 2 - 100,
+                width: 200,
+                height: 200
+            };
+
+            ctx.strokeStyle = 'red';
+            ctx.strokeRect(roi.x, roi.y, roi.width, roi.height);
+
+            return roi;
+        }
+
+        function detectMotion(prevFrame, currentFrame, roi) {
+            const pixelsPrev = prevFrame.data;
+            const pixelsCurr = currentFrame.data;
+            const threshold = 100; // Adjust this threshold as needed
+
+            for (let y = roi.y; y < roi.y + roi.height; y++) {
+                for (let x = roi.x; x < roi.x + roi.width; x++) {
+                    const index = (y * canvas.width + x) * 4;
+                    const brightnessPrev = (pixelsPrev[index] + pixelsPrev[index + 1] + pixelsPrev[index + 2]) / 3;
+                    const brightnessCurr = (pixelsCurr[index] + pixelsCurr[index + 1] + pixelsCurr[index + 2]) / 3;
+
+                    if (Math.abs(brightnessCurr - brightnessPrev) > threshold) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
     </script>
 </body>
-
 </html>
