@@ -4,10 +4,28 @@
 <head>
     <title>Hello Camera</title>
     <script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
+    <style>
+        #enhancerUIContainer {
+            position: relative;
+            height: 100vh;
+        }
+
+        #square {
+            position: absolute;
+            top: calc(50% - 100px); /* Adjust positioning as needed */
+            left: calc(50% - 100px); /* Adjust positioning as needed */
+            width: 200px;
+            height: 200px;
+            border: 2px solid red;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 
 <body>
-    <div id="enhancerUIContainer" style="height: 100vh;"></div>
+    <div id="enhancerUIContainer">
+        <div id="square"></div>
+    </div>
     <script>
         let enhancer = null;
         let isBeeping = false;
@@ -18,14 +36,14 @@
             await enhancer.open(true);
         })();
 
-        document.getElementById('capture').onclick = () => {
+        document.getElementById('enhancerUIContainer').addEventListener('click', () => {
             if (enhancer) {
                 let frame = enhancer.getFrame();
 
                 // Calculate the position and size of the square
                 const square = {
-                    x: 100,
-                    y: 100,
+                    x: Math.round(frame.videoWidth / 2 - 100), // Centered horizontally
+                    y: Math.round(frame.videoHeight / 2 - 100), // Centered vertically
                     width: 200,
                     height: 200
                 };
@@ -42,12 +60,8 @@
                 } else if (!motionDetected && isBeeping) {
                     stopBeep();
                 }
-
-                // Open a new window and display the captured frame
-                let popWindow = window.open('', 'popup', 'width=640,height=640,scrollbars=yes');
-                popWindow.document.body.appendChild(frame.canvas);
             }
-        };
+        });
 
         function detectMotion(ctx, square) {
             const imageData = ctx.getImageData(square.x, square.y, square.width, square.height);
