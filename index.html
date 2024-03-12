@@ -24,19 +24,22 @@
 </head>
 
 <body>
-    <audio id="beepAudio" src="beep.mp3"></audio> <!-- Provide path to your beep sound file -->
     <div id="enhancerUIContainer">
         <div id="square"></div>
     </div>
     <script>
         let enhancer = null;
         let isBeeping = false;
-        const beepAudio = document.getElementById('beepAudio');
+        let audioContext = null;
+        let oscillator = null;
 
         (async () => {
             enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
             document.getElementById("enhancerUIContainer").appendChild(enhancer.getUIElement());
             await enhancer.open(true);
+
+            // Create audio context
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
         })();
 
         document.getElementById('enhancerUIContainer').addEventListener('click', () => {
@@ -83,18 +86,24 @@
         }
 
         function startBeep() {
-            // Play the beep sound
-            beepAudio.play();
+            // Create oscillator
+            oscillator = audioContext.createOscillator();
+            oscillator.type = 'sine'; // Set oscillator type
+            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime); // Set frequency
+            oscillator.connect(audioContext.destination); // Connect oscillator to audio output
+            oscillator.start(); // Start oscillator
             console.log("Beep start");
             isBeeping = true;
         }
 
         function stopBeep() {
-            // Pause the beep sound
-            beepAudio.pause();
-            beepAudio.currentTime = 0; // Rewind to start
-            console.log("Beep stop");
-            isBeeping = false;
+            // Stop oscillator
+            if (oscillator) {
+                oscillator.stop();
+                oscillator.disconnect();
+                console.log("Beep stop");
+                isBeeping = false;
+            }
         }
     </script>
 </body>
