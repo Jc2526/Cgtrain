@@ -1,6 +1,7 @@
 <!-- beep-page.html -->
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Hello Camera</title>
     <script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
@@ -22,13 +23,18 @@
         }
     </style>
 </head>
+
 <body>
     <audio id="beepAudio" src="https://www.soundjay.com/button/beep-07.wav"></audio>
     <div id="enhancerUIContainer">
         <div id="square"></div>
         <button id="playButton">Play Beep Sound</button>
     </div>
-    <script>
+
+    <a href="index.html">Back to Home</a> <!-- Add a link back to the homepage -->
+
+    <script type="text/javascript">
+
         let enhancer = null;
         let isBeeping = false;
         const beepAudio = document.getElementById('beepAudio');
@@ -47,3 +53,6 @@
                 // Create audio buffer source
                 const beepSource = audioContext.createBufferSource();
                 // Set the
+
+
+              </script>
