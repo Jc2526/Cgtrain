@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html>
 
@@ -141,6 +142,7 @@
         function detectMotion(roi) {
             const pixels = enhancer.getFrame().data;
             const threshold = 100; // Adjust this threshold as needed
+            let motionDetected = false;
 
             for (let y = roi.y; y < roi.y + roi.height; y++) {
                 for (let x = roi.x; x < roi.x + roi.width; x++) {
@@ -148,12 +150,16 @@
                     const brightness = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3;
 
                     if (brightness > threshold) {
-                        return true;
+                        motionDetected = true;
+                        break;
                     }
+                }
+                if (motionDetected) {
+                    break;
                 }
             }
 
-            return false;
+            return motionDetected;
         }
     </script>
 </body>
