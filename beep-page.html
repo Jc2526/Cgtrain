@@ -1,0 +1,49 @@
+<!-- beep-page.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello Camera</title>
+    <script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
+    <style>
+        #enhancerUIContainer {
+            position: relative;
+            height: 100vh;
+        }
+
+        #square {
+            position: absolute;
+            top: calc(50% - 100px); /* Adjust positioning as needed */
+            left: calc(50% - 100px); /* Adjust positioning as needed */
+            width: 200px;
+            height: 200px;
+            border: 2px solid red;
+            box-sizing: border-box;
+            z-index: 999; /* Bring the square to the front */
+        }
+    </style>
+</head>
+<body>
+    <audio id="beepAudio" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+    <div id="enhancerUIContainer">
+        <div id="square"></div>
+        <button id="playButton">Play Beep Sound</button>
+    </div>
+    <script>
+        let enhancer = null;
+        let isBeeping = false;
+        const beepAudio = document.getElementById('beepAudio');
+        const playButton = document.getElementById('playButton');
+
+        // Function to load and play the beep sound
+        async function loadAndPlayBeepSound() {
+            try {
+                // Create audio context
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                // Load the beep sound file
+                const response = await fetch('https://www.soundjay.com/button/beep-07.wav');
+                const arrayBuffer = await response.arrayBuffer();
+                // Decode the audio data
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                // Create audio buffer source
+                const beepSource = audioContext.createBufferSource();
+                // Set the

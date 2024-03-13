@@ -1,141 +1,19 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camera Detection</title>
-<style>
-    #video {
-        width: 100%;
-        max-width: 100vw;
-        height: auto;
-    }
-
-    #overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-    }
-
-    #square {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 200px;
-        height: 200px;
-        border: 2px solid red;
-        box-sizing: border-box;
-        display: none;
-    }
-</style>
+<title>Home Page</title>
 </head>
 <body>
-    <video id="video" autoplay></video>
-    <canvas id="overlay"></canvas>
-    <div id="square"></div>
+    <h1>Welcome to the Home Page</h1>
+    <p>Click the button below to go to the page with the beep sound functionality:</p>
+    <button onclick="goToBeepPage()">Go to Beep Page</button>
 
     <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('overlay');
-        const ctx = canvas.getContext('2d');
-        const square = document.getElementById('square');
-        let prevFrame = null;
-        let isBeeping = false;
-
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(function(stream) {
-                video.srcObject = stream;
-                video.onloadedmetadata = function(e) {
-                    video.play();
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    square.style.display = 'block';
-                    prevFrame = captureFrame();
-                    animate();
-                };
-            })
-            .catch(function(err) {
-                console.log("An error occurred: " + err);
-            });
-
-        // Create and configure the beep sound
-        const beepSound = new Audio('beep.mp3'); // Change the path to the beep sound file
-        beepSound.loop = true; // Make the beep sound loop
-
-        function animate() {
-            const currentFrame = captureFrame();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw the ROI square on the canvas
-            const roi = drawSquare();
-
-            // Detect motion within the ROI
-            if (prevFrame) {
-                const motionDetected = detectMotion(prevFrame, currentFrame, roi);
-                if (motionDetected && !isBeeping) {
-                    startBeep();
-                } else if (!motionDetected && isBeeping) {
-                    stopBeep();
-                }
-            }
-
-            prevFrame = currentFrame;
-
-            requestAnimationFrame(animate);
-        }
-
-        function captureFrame() {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            return ctx.getImageData(0, 0, canvas.width, canvas.height);
-        }
-
-        function drawSquare() {
-            const roi = {
-                x: canvas.width / 2 - 100,
-                y: canvas.height / 2 - 100,
-                width: 200,
-                height: 200
-            };
-
-            ctx.strokeStyle = 'red';
-            ctx.strokeRect(roi.x, roi.y, roi.width, roi.height);
-
-            return roi;
-        }
-
-        function detectMotion(prevFrame, currentFrame, roi) {
-            const pixelsPrev = prevFrame.data;
-            const pixelsCurr = currentFrame.data;
-            const threshold = 100; // Adjust this threshold as needed
-
-            for (let y = roi.y; y < roi.y + roi.height; y++) {
-                for (let x = roi.x; x < roi.x + roi.width; x++) {
-                    const index = (y * canvas.width + x) * 4;
-                    const brightnessPrev = (pixelsPrev[index] + pixelsPrev[index + 1] + pixelsPrev[index + 2]) / 3;
-                    const brightnessCurr = (pixelsCurr[index] + pixelsCurr[index + 1] + pixelsCurr[index + 2]) / 3;
-
-                    if (Math.abs(brightnessCurr - brightnessPrev) > threshold) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        function startBeep() {
-            beepSound.play();
-            isBeeping = true;
-        }
-
-        function stopBeep() {
-            beepSound.pause();
-            beepSound.currentTime = 0; // Reset the beep sound to the beginning
-            isBeeping = false;
+        function goToBeepPage() {
+            window.location.href = 'beep-page.html'; // Change 'beep-page.html' to the actual file name of your beep page
         }
     </script>
 </body>
