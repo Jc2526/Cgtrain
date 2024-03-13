@@ -4,6 +4,24 @@
 <head>
     <title>Hello Camera</title>
     <script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
+    <style>
+        #enhancerUIContainer {
+            position: relative;
+            height: 100vh;
+        }
+
+        #square {
+            position: absolute;
+            top: calc(50% - 100px); /* Adjust positioning as needed */
+            left: calc(50% - 100px); /* Adjust positioning as needed */
+            width: 200px;
+            height: 200px;
+            border: 2px solid red;
+            box-sizing: border-box;
+            display: none;
+            z-index: 999; /* Bring the square to the front */
+        }
+    </style>
 </head>
 
 <body>
@@ -14,15 +32,35 @@
     <audio id="beepAudio" src="beep.mp3"></audio>
     <button id="playBeepButton">Play Beep Sound</button>
 
+    <div id="square"></div>
+
     <script>
         let enhancer = null;
         const beepAudio = document.getElementById('beepAudio');
         const playBeepButton = document.getElementById('playBeepButton');
+        const square = document.getElementById('square');
+        let isBeeping = false;
 
         // Function to play the beep sound
         function playBeepSound() {
             beepAudio.currentTime = 0; // Reset the audio to start from the beginning
             beepAudio.play(); // Play the beep sound
+        }
+
+        // Function to start beeping
+        function startBeeping() {
+            if (!isBeeping) {
+                playBeepSound();
+                isBeeping = true;
+            }
+        }
+
+        // Function to stop beeping
+        function stopBeeping() {
+            if (isBeeping) {
+                beepAudio.pause(); // Pause the audio
+                isBeeping = false;
+            }
         }
 
         (async () => {
@@ -50,7 +88,60 @@
 
         // Attach event listener to the play beep button
         playBeepButton.addEventListener('click', playBeepSound);
+
+        // Start animation loop
+        requestAnimationFrame(animate);
+
+        function animate() {
+            const currentFrame = enhancer.getFrame();
+            const roi = drawSquare();
+            const motionDetected = detectMotion(roi);
+
+            if (motionDetected) {
+                startBeeping();
+            } else {
+                stopBeeping();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function drawSquare() {
+            const roi = {
+                x: enhancer.videoWidth / 2 - 100,
+                y: enhancer.videoHeight / 2 - 100,
+                width: 200,
+                height: 200
+            };
+
+            square.style.left = roi.x + 'px';
+            square.style.top = roi.y + 'px';
+            square.style.display = 'block';
+
+            return roi;
+        }
+
+        function detectMotion(roi) {
+            const pixels = enhancer.getFrame().data;
+            const threshold = 100; // Adjust this threshold as needed
+
+            for (let y = roi.y; y < roi.y + roi.height; y++) {
+                for (let x = roi.x; x < roi.x + roi.width; x++) {
+                    const index = (y * enhancer.videoWidth + x) * 4;
+                    const brightness = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3;
+
+                    if (brightness > threshold) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
     </script>
 </body>
+
+</html>
+
 
 </html>
