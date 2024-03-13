@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html>
 
@@ -21,6 +23,15 @@
             display: none;
             z-index: 999; /* Bring the square to the front */
         }
+
+        #motionIndicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: green;
+            display: none;
+        }
     </style>
 </head>
 
@@ -33,12 +44,14 @@
     <button id="playBeepButton">Play Beep Sound</button>
 
     <div id="square"></div>
+    <div id="motionIndicator">0</div>
 
     <script>
         let enhancer = null;
         const beepAudio = document.getElementById('beepAudio');
         const playBeepButton = document.getElementById('playBeepButton');
         const square = document.getElementById('square');
+        const motionIndicator = document.getElementById('motionIndicator');
         let isBeeping = false;
 
         // Function to play the beep sound
@@ -99,8 +112,12 @@
 
             if (motionDetected) {
                 startBeeping();
+                motionIndicator.textContent = '1';
+                motionIndicator.style.color = 'red';
             } else {
                 stopBeeping();
+                motionIndicator.textContent = '0';
+                motionIndicator.style.color = 'green';
             }
 
             requestAnimationFrame(animate);
@@ -140,8 +157,5 @@
         }
     </script>
 </body>
-
-</html>
-
 
 </html>
