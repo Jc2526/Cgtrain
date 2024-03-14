@@ -45,6 +45,9 @@
           // Motion detected
           document.getElementById('motionText').setAttribute('value', 'Motion Detected');
           // You can trigger any action here, such as playing an alarm sound or sending an alert
+        } else {
+          // No motion detected
+          document.getElementById('motionText').setAttribute('value', 'Motion');
         }
       });
     }
