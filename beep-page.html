@@ -2,12 +2,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Camera Motion Detection</title>
+<script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
 <style>
     video {
         display: block;
@@ -16,58 +14,31 @@
         max-width: 640px;
         height: auto;
     }
-
-    #motionIndicator {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        font-size: 24px;
-        color: green;
-        display: none;
-    }
 </style>
 </head>
 <body>
     <video id="video" autoplay></video>
-    <div id="motionIndicator">0</div>
-
     <script>
         const video = document.getElementById('video');
-        const motionIndicator = document.getElementById('motionIndicator');
-        let isBeeping = false;
         let prevFrame = null;
 
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function(stream) {
-                video.srcObject = stream;
-                video.onloadedmetadata = function(e) {
-                    video.play();
-                    prevFrame = captureFrame();
-                    animate();
-                };
-            })
-            .catch(function(err) {
-                console.log("An error occurred: " + err);
-            });
+        (async () => {
+            const enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
+            video.srcObject = enhancer.camera;
+            await enhancer.open();
+        })();
 
-        function animate() {
+        setInterval(() => {
             const currentFrame = captureFrame();
-            const motionDetected = detectMotion(prevFrame, currentFrame);
-
-            if (motionDetected) {
-                startBeep();
-                motionIndicator.textContent = '1';
-                motionIndicator.style.color = 'red';
-            } else {
-                stopBeep();
-                motionIndicator.textContent = '0';
-                motionIndicator.style.color = 'green';
+            if (prevFrame) {
+                const motionDetected = detectMotion(prevFrame, currentFrame);
+                if (motionDetected) {
+                    console.log('Motion detected!');
+                    // Perform desired action when motion is detected
+                }
             }
-
             prevFrame = currentFrame;
-
-            requestAnimationFrame(animate);
-        }
+        }, 1000); // Adjust interval as needed
 
         function captureFrame() {
             const canvas = document.createElement('canvas');
@@ -79,38 +50,10 @@
         }
 
         function detectMotion(prevFrame, currentFrame) {
-            if (!prevFrame) {
-                return false;
-            }
-
-            const pixelsPrev = prevFrame.data;
-            const pixelsCurr = currentFrame.data;
-            const threshold = 100; // Adjust this threshold as needed
-
-            for (let i = 0; i < pixelsCurr.length; i += 4) {
-                const brightnessPrev = (pixelsPrev[i] + pixelsPrev[i + 1] + pixelsPrev[i + 2]) / 3;
-                const brightnessCurr = (pixelsCurr[i] + pixelsCurr[i + 1] + pixelsCurr[i + 2]) / 3;
-
-                if (Math.abs(brightnessCurr - brightnessPrev) > threshold) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        function startBeep() {
-            if (!isBeeping) {
-                console.log("Beep start");
-                isBeeping = true;
-            }
-        }
-
-        function stopBeep() {
-            if (isBeeping) {
-                console.log("Beep stop");
-                isBeeping = false;
-            }
+            // Implement your motion detection algorithm here
+            // Compare pixel data between prevFrame and currentFrame
+            // Return true if motion is detected, false otherwise
+            return false; // Placeholder, replace with actual logic
         }
     </script>
 </body>
