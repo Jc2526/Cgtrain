@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebAR with Proximity Detection and Beep</title>
+  <title>WebAR with Motion Detection</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
 </head>
@@ -15,54 +15,22 @@
 
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
+
+    <!-- Motion detection message -->
+    <a-text id="motionText" position="0 0.5 -2" color="red" align="center" value=""></a-text>
   </a-scene>
 
   <script>
-    // Event listener for proximity detection
-    AFRAME.registerComponent('collider-check', {
-      init: function () {
-        var el = this.el;
-        this.el.sceneEl.addEventListener('artrackingstart', function (evt) {
-          var box = el.object3D;
-          var boxPos = new THREE.Vector3();
-          var cameraPos = new THREE.Vector3();
-          var directionVec = new THREE.Vector3();
-          var distance = 1.5; // Adjust distance threshold as needed
+    // Event listener for motion detection
+    window.addEventListener('devicemotion', function(event) {
+      // Calculate total acceleration
+      var acceleration = Math.sqrt(event.acceleration.x ** 2 + event.acceleration.y ** 2 + event.acceleration.z ** 2);
 
-          var camera = el.sceneEl.camera;
-          var raycaster = new THREE.Raycaster();
-
-          function checkProximity() {
-            // Get the position of the box and the camera
-            box.getWorldPosition(boxPos);
-            camera.getWorldPosition(cameraPos);
-
-            // Calculate the direction from the camera to the box
-            directionVec.subVectors(boxPos, cameraPos).normalize();
-
-            // Set the raycaster origin and direction
-            raycaster.set(cameraPos, directionVec);
-
-            // Check for intersections with the box
-            var intersects = raycaster.intersectObject(box);
-
-            // If the box is in front of the camera
-            if (intersects.length > 0 && intersects[0].distance <= distance) {
-              // Beep sound
-              var context = new AudioContext();
-              var oscillator = context.createOscillator();
-              oscillator.type = 'sine';
-              oscillator.frequency.setValueAtTime(1000, context.currentTime);
-              oscillator.connect(context.destination);
-              oscillator.start();
-              setTimeout(function(){
-                oscillator.stop();
-              }, 200); // Beep duration in milliseconds
-            }
-          }
-
-          setInterval(checkProximity, 1000); // Adjust interval as needed
-        });
+      // If total acceleration is above a threshold, motion is detected
+      if (acceleration > 5) {
+        document.getElementById('motionText').setAttribute('value', 'Motion Detected');
+      } else {
+        document.getElementById('motionText').setAttribute('value', '');
       }
     });
   </script>
