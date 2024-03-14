@@ -6,10 +6,7 @@
   <title>AR Motion Detection</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tracking/build/tracking-min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tracking/build/data/face-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsfeat"></script>
 </head>
 <body>
   <a-scene embedded arjs="sourceType: webcam;">
@@ -21,41 +18,44 @@
   </a-scene>
 
   <script>
-    // Load the pre-trained MobileNet model
-    async function loadModel() {
-      const model = await mobilenet.load();
-      return model;
-    }
+    // Variables to store previous frame data
+    var prevImageData;
 
-    // Detect motion using face detection
-    async function detectMotion(model) {
-      const video = document.querySelector('video');
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
+    // Initialize motion detection
+    function initMotionDetection() {
+      var video = document.querySelector('video');
+      var canvas = document.createElement('canvas');
+      var context = canvas.getContext('2d');
 
-      const tracker = new tracking.ObjectTracker('face');
-      tracker.setInitialScale(4);
-      tracker.setStepSize(2);
-      tracker.setEdgesDensity(0.1);
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
-      tracking.track(video, tracker, { camera: true });
+      // Function to compare frames for motion
+      function detectMotion() {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 
-      tracker.on('track', function(event) {
-        if (event.data.length > 0) {
-          // Motion detected
-          document.getElementById('motionText').setAttribute('value', 'Motion Detected');
-          // You can trigger any action here, such as playing an alarm sound or sending an alert
-        } else {
-          // No motion detected
-          document.getElementById('motionText').setAttribute('value', 'Motion');
+        if (prevImageData) {
+          var motionDetected = jsfeat.motion_detection(prevImageData, imageData, 30);
+          if (motionDetected) {
+            document.getElementById('motionText').setAttribute('value', 'Motion Detected');
+          } else {
+            document.getElementById('motionText').setAttribute('value', 'Motion');
+          }
         }
-      });
+
+        prevImageData = new jsfeat.matrix_t(canvas.width, canvas.height, jsfeat.U8_t | jsfeat.C1_t);
+        prevImageData.data.set(imageData.data);
+        requestAnimationFrame(detectMotion);
+      }
+
+      detectMotion();
     }
 
     // Main function
-    async function main() {
-      const model = await loadModel();
-      detectMotion(model);
+    function main() {
+      initMotionDetection();
     }
 
     main();
