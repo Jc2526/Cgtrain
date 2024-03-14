@@ -3,120 +3,58 @@
 <html>
 
 <head>
-    <title>Hello Camera</title>
+    <title>Motion Detection with Dynamsoft Camera Enhancer</title>
     <script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
-    <style>
-        #enhancerUIContainer {
-            position: relative;
-            height: 100vh;
-        }
-
-        #square {
-            position: absolute;
-            top: calc(50% - 100px); /* Adjust positioning as needed */
-            left: calc(50% - 100px); /* Adjust positioning as needed */
-            width: 200px;
-            height: 200px;
-            border: 2px solid red;
-            box-sizing: border-box;
-            z-index: 999; /* Bring the square to the front */
-        }
-    </style>
 </head>
 
 <body>
-    <audio id="beepAudio" src="https://www.soundjay.com/button/beep-07.wav"></audio>
-    <div id="enhancerUIContainer">
-        <div id="square"></div>
-    </div>
+    <button id="startButton">Start Motion Detection</button>
+    <button id="stopButton">Stop Motion Detection</button>
+    <audio id="beepSound" src="beep.mp3"></audio>
+    <div id="cameraFeed"></div>
+
     <script>
         let enhancer = null;
-        let isBeeping = false;
-        const beepAudio = document.getElementById('beepAudio');
+        let isMotionDetectionActive = false;
+        const beepSound = document.getElementById('beepSound');
 
-        // Function to load and play the beep sound
-        async function loadAndPlayBeepSound() {
-            try {
-                // Create audio context
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                // Load the beep sound file
-                const response = await fetch('https://www.soundjay.com/button/beep-07.wav');
-                const arrayBuffer = await response.arrayBuffer();
-                // Decode the audio data
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                // Create audio buffer source
-                const beepSource = audioContext.createBufferSource();
-                // Set the beep source buffer
-                beepSource.buffer = audioBuffer;
-                // Connect the beep source to the audio context's destination (speakers)
-                beepSource.connect(audioContext.destination);
-                // Start playing the beep sound
-                beepSource.start();
-                // Log a message to indicate that the beep sound started
-                console.log("Beep sound started");
-            } catch (error) {
-                // Log any errors that occur during the loading or playback of the beep sound
-                console.error("Error loading or playing beep sound:", error);
-            }
-        }
+        document.getElementById('startButton').addEventListener('click', startMotionDetection);
+        document.getElementById('stopButton').addEventListener('click', stopMotionDetection);
 
-        (async () => {
+        async function startMotionDetection() {
+            isMotionDetectionActive = true;
             enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
-            document.getElementById("enhancerUIContainer").appendChild(enhancer.getUIElement());
+            document.getElementById("cameraFeed").appendChild(enhancer.getUIElement());
             await enhancer.open(true);
-        })();
-
-        document.getElementById('enhancerUIContainer').addEventListener('click', () => {
-            if (enhancer) {
-                let frame = enhancer.getFrame();
-
-                // Calculate the position and size of the square
-                const square = {
-                    x: Math.round(frame.videoWidth / 2 - 100), // Centered horizontally
-                    y: Math.round(frame.videoHeight / 2 - 100), // Centered vertically
-                    width: 200,
-                    height: 200
-                };
-
-                // Draw the square on the frame canvas
-                let ctx = frame.canvas.getContext('2d');
-                ctx.strokeStyle = 'red';
-                ctx.strokeRect(square.x, square.y, square.width, square.height);
-
-                // Detect motion within the square
-                const motionDetected = detectMotion(ctx, square);
-                if (motionDetected && !isBeeping) {
-                    startBeep();
-                } else if (!motionDetected && isBeeping) {
-                    stopBeep();
-                }
-            }
-        });
-
-        function detectMotion(ctx, square) {
-            const imageData = ctx.getImageData(square.x, square.y, square.width, square.height);
-            const pixels = imageData.data;
-            const threshold = 100; // Adjust this threshold as needed
-
-            for (let i = 0; i < pixels.length; i += 4) {
-                const brightness = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
-
-                if (brightness > threshold) {
-                    return true;
-                }
-            }
-
-            return false;
+            captureFrames();
         }
 
-        function startBeep() {
-            loadAndPlayBeepSound();
-            isBeeping = true;
+        function stopMotionDetection() {
+            isMotionDetectionActive = false;
+            enhancer && enhancer.close();
         }
 
-        function stopBeep() {
-            // Stop beep sound logic goes here (if needed)
-            isBeeping = false;
+        async function captureFrames() {
+            while (isMotionDetectionActive) {
+                const frame = enhancer.getFrame();
+                // Perform motion detection logic here
+                if (motionDetected(frame)) {
+                    playBeepSound();
+                }
+                await new Promise(resolve => requestAnimationFrame(resolve));
+            }
+        }
+
+        function motionDetected(frame) {
+            // Implement motion detection logic here
+            // For example, compare consecutive frames and check for changes
+            // Return true if motion is detected, false otherwise
+            return false; // Placeholder, replace with actual logic
+        }
+
+        function playBeepSound() {
+            beepSound.currentTime = 0;
+            beepSound.play();
         }
     </script>
 </body>
