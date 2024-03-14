@@ -1,37 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Object Tracking Demo</title>
-    <style>
-        #video {
-            width: 100%;
-            height: auto;
-            border: 1px solid black;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distance Tracker</title>
+<style>
+    #video-container {
+        position: relative;
+        width: 100%;
+        height: auto;
+        margin: 0 auto;
+        overflow: hidden;
+    }
+    #video {
+        width: 100%;
+        height: auto;
+    }
+    #distance-output {
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 20px;
+    }
+</style>
 </head>
 <body>
-    <h1>Object Tracking Demo</h1>
+<div id="video-container">
     <video id="video" autoplay playsinline></video>
+</div>
+<div id="distance-output"></div>
 
-    <script>
-        // Access the camera and stream the video to the video element
-        async function startVideo() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const videoElement = document.getElementById('video');
-                videoElement.srcObject = stream;
-            } catch (error) {
-                console.error('Error accessing the camera:', error);
+<script>
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(function(stream) {
+    var video = document.getElementById('video');
+    video.srcObject = stream;
+    video.play();
+
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    var width = video.width;
+    var height = video.height;
+    canvas.width = width;
+    canvas.height = height;
+
+    setInterval(function() {
+        context.drawImage(video, 0, 0, width, height);
+        var imageData = context.getImageData(0, 0, width, height);
+
+        var closestObjectDistance = 0;
+
+        for (var i = 0; i < imageData.data.length; i += 4) {
+            var red = imageData.data[i];
+            var green = imageData.data[i + 1];
+            var blue = imageData.data[i + 2];
+
+            var brightness = (red + green + blue) / 3;
+            if (brightness === 255) {
+                closestObjectDistance = 500; // Max distance (white)
+                break;
+            } else if (brightness > 0) {
+                closestObjectDistance = 1; // Closest distance (non-white)
+                break;
             }
         }
 
-        // Start the video stream when the page loads
-        window.onload = function () {
-            startVideo();
-        };
-    </script>
+        var distanceOutput = document.getElementById('distance-output');
+        distanceOutput.textContent = "Closest object distance: " + closestObjectDistance + "px";
+    }, 500); // Adjust interval as needed
+})
+.catch(function(err) {
+    console.error('Error accessing the camera.', err);
+});
+</script>
 </body>
 </html>
