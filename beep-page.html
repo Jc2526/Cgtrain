@@ -1,79 +1,94 @@
 
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Hello Camera</title>
-    <script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
-    <style>
-        #enhancerUIContainer {
-            position: relative;
-            height: 100vh;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Motion Detection</title>
+<style>
+    video {
+        display: block;
+        margin: auto;
+        width: 100%;
+        max-width: 640px;
+        height: auto;
+    }
 
-        #square {
-            position: absolute;
-            top: calc(50% - 100px); /* Adjust positioning as needed */
-            left: calc(50% - 100px); /* Adjust positioning as needed */
-            width: 200px;
-            height: 200px;
-            border: 2px solid red;
-            box-sizing: border-box;
-            z-index: 999; /* Bring the square to the front */
-        }
-    </style>
+    #motionIndicator {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 24px;
+        color: green;
+        display: none;
+    }
+</style>
 </head>
-
 <body>
-    <div id="enhancerUIContainer">
-        <div id="square"></div>
-    </div>
+    <video id="video" autoplay></video>
+    <div id="motionIndicator">0</div>
+
     <script>
-        let enhancer = null;
+        const video = document.getElementById('video');
+        const motionIndicator = document.getElementById('motionIndicator');
         let isBeeping = false;
+        let prevFrame = null;
 
-        (async () => {
-            enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
-            document.getElementById("enhancerUIContainer").appendChild(enhancer.getUIElement());
-            await enhancer.open(true);
-        })();
-
-        document.getElementById('enhancerUIContainer').addEventListener('click', () => {
-            if (enhancer) {
-                let frame = enhancer.getFrame();
-
-                // Calculate the position and size of the square
-                const square = {
-                    x: Math.round(frame.videoWidth / 2 - 100), // Centered horizontally
-                    y: Math.round(frame.videoHeight / 2 - 100), // Centered vertically
-                    width: 200,
-                    height: 200
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.onloadedmetadata = function(e) {
+                    video.play();
+                    prevFrame = captureFrame();
+                    animate();
                 };
+            })
+            .catch(function(err) {
+                console.log("An error occurred: " + err);
+            });
 
-                // Draw the square on the frame canvas
-                let ctx = frame.canvas.getContext('2d');
-                ctx.strokeStyle = 'red';
-                ctx.strokeRect(square.x, square.y, square.width, square.height);
+        function animate() {
+            const currentFrame = captureFrame();
+            const motionDetected = detectMotion(prevFrame, currentFrame);
 
-                // Detect motion within the square
-                const motionDetected = detectMotion(ctx, square);
-                if (motionDetected && !isBeeping) {
-                    startBeep();
-                } else if (!motionDetected && isBeeping) {
-                    stopBeep();
-                }
+            if (motionDetected) {
+                startBeep();
+                motionIndicator.textContent = '1';
+                motionIndicator.style.color = 'red';
+            } else {
+                stopBeep();
+                motionIndicator.textContent = '0';
+                motionIndicator.style.color = 'green';
             }
-        });
 
-        function detectMotion(ctx, square) {
-            const imageData = ctx.getImageData(square.x, square.y, square.width, square.height);
-            const pixels = imageData.data;
+            prevFrame = currentFrame;
+
+            requestAnimationFrame(animate);
+        }
+
+        function captureFrame() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
+        function detectMotion(prevFrame, currentFrame) {
+            if (!prevFrame) {
+                return false;
+            }
+
+            const pixelsPrev = prevFrame.data;
+            const pixelsCurr = currentFrame.data;
             const threshold = 100; // Adjust this threshold as needed
 
-            for (let i = 0; i < pixels.length; i += 4) {
-                const brightness = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+            for (let i = 0; i < pixelsCurr.length; i += 4) {
+                const brightnessPrev = (pixelsPrev[i] + pixelsPrev[i + 1] + pixelsPrev[i + 2]) / 3;
+                const brightnessCurr = (pixelsCurr[i] + pixelsCurr[i + 1] + pixelsCurr[i + 2]) / 3;
 
-                if (brightness > threshold) {
+                if (Math.abs(brightnessCurr - brightnessPrev) > threshold) {
                     return true;
                 }
             }
@@ -82,17 +97,18 @@
         }
 
         function startBeep() {
-            // Replace this with your beep logic
-            console.log("Beep start");
-            isBeeping = true;
+            if (!isBeeping) {
+                console.log("Beep start");
+                isBeeping = true;
+            }
         }
 
         function stopBeep() {
-            // Replace this with your beep logic
-            console.log("Beep stop");
-            isBeeping = false;
+            if (isBeeping) {
+                console.log("Beep stop");
+                isBeeping = false;
+            }
         }
     </script>
 </body>
-
 </html>
