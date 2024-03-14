@@ -8,35 +8,37 @@
   <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
-  <a-scene embedded arjs="sourceType: webcam;">
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
 
+    <!-- Marker for measuring distance -->
+    <a-marker type="barcode" value="7">
+      <a-box position="0 0.5 0" color="red" depth="0.1" height="1" width="1"></a-box>
+    </a-marker>
+
+    <!-- Second marker for measuring distance -->
+    <a-marker type="barcode" value="4">
+      <a-box position="1 0.5 0" color="blue" depth="0.1" height="1" width="1"></a-box>
+    </a-marker>
+
     <!-- Distance measurement text -->
-    <a-text id="distanceText" position="0 -0.5 -2" color="blue" align="center" value="Distance:"></a-text>
+    <a-text id="distanceText" position="0 0 -2" color="black" align="center" value="Distance:"></a-text>
   </a-scene>
 
   <script>
-    // Event listener for device orientation change
-    window.addEventListener('deviceorientation', function(event) {
-      // Calculate distance based on device orientation
-      var distance = calculateDistance(event.beta);
-      document.getElementById('distanceText').setAttribute('value', 'Distance: ' + distance.toFixed(2) + ' meters');
+    // Event listener for distance measurement
+    document.addEventListener('arjs-detection', function(event) {
+      var marker7 = document.querySelector('a-marker[type="barcode"][value="7"]');
+      var marker4 = document.querySelector('a-marker[type="barcode"][value="4"]');
+
+      if (marker7.object3D.visible && marker4.object3D.visible) {
+        var distance = marker7.object3D.position.distanceTo(marker4.object3D.position);
+        document.getElementById('distanceText').setAttribute('value', 'Distance: ' + distance.toFixed(2) + ' meters');
+      } else {
+        document.getElementById('distanceText').setAttribute('value', 'Distance: Unknown');
+      }
     });
-
-    // Calculate distance based on device orientation
-    function calculateDistance(beta) {
-      // Height of the device from the ground (in meters)
-      var deviceHeight = 1.5; // Adjust this value as needed
-
-      // Angle of elevation (beta) in radians
-      var betaRad = beta * (Math.PI / 180);
-
-      // Distance calculation (simple trigonometry)
-      var distance = deviceHeight / Math.tan(betaRad);
-
-      return distance;
-    }
   </script>
 </body>
 </html>
