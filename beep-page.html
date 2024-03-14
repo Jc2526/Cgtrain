@@ -19,61 +19,18 @@
             height: 200px;
             border: 2px solid red;
             box-sizing: border-box;
-            display: none;
             z-index: 999; /* Bring the square to the front */
-        }
-
-        #motionIndicator {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 24px;
-            color: green;
-            display: none;
         }
     </style>
 </head>
 
 <body>
-    <button id="capture">Capture</button>
-    <div id="enhancerUIContainer" style="height: 100vh;"></div>
-
-    <!-- Beep sound audio element -->
-    <audio id="beepAudio" src="beep.mp3"></audio>
-    <button id="playBeepButton">Play Beep Sound</button>
-
-    <div id="square"></div>
-    <div id="motionIndicator">0</div>
-
+    <div id="enhancerUIContainer">
+        <div id="square"></div>
+    </div>
     <script>
         let enhancer = null;
-        const beepAudio = document.getElementById('beepAudio');
-        const playBeepButton = document.getElementById('playBeepButton');
-        const square = document.getElementById('square');
-        const motionIndicator = document.getElementById('motionIndicator');
         let isBeeping = false;
-
-        // Function to play the beep sound
-        function playBeepSound() {
-            beepAudio.currentTime = 0; // Reset the audio to start from the beginning
-            beepAudio.play(); // Play the beep sound
-        }
-
-        // Function to start beeping
-        function startBeeping() {
-            if (!isBeeping) {
-                playBeepSound();
-                isBeeping = true;
-            }
-        }
-
-        // Function to stop beeping
-        function stopBeeping() {
-            if (isBeeping) {
-                beepAudio.pause(); // Pause the audio
-                isBeeping = false;
-            }
-        }
 
         (async () => {
             enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
@@ -81,83 +38,59 @@
             await enhancer.open(true);
         })();
 
-        document.getElementById('capture').onclick = () => {
+        document.getElementById('enhancerUIContainer').addEventListener('click', () => {
             if (enhancer) {
                 let frame = enhancer.getFrame();
 
-                let width = screen.availWidth;
-                let height = screen.availHeight;
-                let popW = 640, popH = 640;
-                let left = (width - popW) / 2;
-                let top = (height - popH) / 2;
+                // Calculate the position and size of the square
+                const square = {
+                    x: Math.round(frame.videoWidth / 2 - 100), // Centered horizontally
+                    y: Math.round(frame.videoHeight / 2 - 100), // Centered vertically
+                    width: 200,
+                    height: 200
+                };
 
-                popWindow = window.open('', 'popup', 'width=' + popW + ',height=' + popH +
-                    ',top=' + top + ',left=' + left + ', scrollbars=yes');
+                // Draw the square on the frame canvas
+                let ctx = frame.canvas.getContext('2d');
+                ctx.strokeStyle = 'red';
+                ctx.strokeRect(square.x, square.y, square.width, square.height);
 
-                popWindow.document.body.appendChild(frame.canvas);
+                // Detect motion within the square
+                const motionDetected = detectMotion(ctx, square);
+                if (motionDetected && !isBeeping) {
+                    startBeep();
+                } else if (!motionDetected && isBeeping) {
+                    stopBeep();
+                }
             }
-        };
+        });
 
-        // Attach event listener to the play beep button
-        playBeepButton.addEventListener('click', playBeepSound);
-
-        // Start animation loop
-        requestAnimationFrame(animate);
-
-        function animate() {
-            const currentFrame = enhancer.getFrame();
-            const roi = drawSquare();
-            const motionDetected = detectMotion(roi);
-
-            if (motionDetected) {
-                startBeeping();
-                motionIndicator.textContent = '1';
-                motionIndicator.style.color = 'red';
-            } else {
-                stopBeeping();
-                motionIndicator.textContent = '0';
-                motionIndicator.style.color = 'green';
-            }
-
-            requestAnimationFrame(animate);
-        }
-
-        function drawSquare() {
-            const roi = {
-                x: enhancer.videoWidth / 2 - 100,
-                y: enhancer.videoHeight / 2 - 100,
-                width: 200,
-                height: 200
-            };
-
-            square.style.left = roi.x + 'px';
-            square.style.top = roi.y + 'px';
-            square.style.display = 'block';
-
-            return roi;
-        }
-
-        function detectMotion(roi) {
-            const pixels = enhancer.getFrame().data;
+        function detectMotion(ctx, square) {
+            const imageData = ctx.getImageData(square.x, square.y, square.width, square.height);
+            const pixels = imageData.data;
             const threshold = 100; // Adjust this threshold as needed
-            let motionDetected = false;
 
-            for (let y = roi.y; y < roi.y + roi.height; y++) {
-                for (let x = roi.x; x < roi.x + roi.width; x++) {
-                    const index = (y * enhancer.videoWidth + x) * 4;
-                    const brightness = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3;
+            for (let i = 0; i < pixels.length; i += 4) {
+                const brightness = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
 
-                    if (brightness > threshold) {
-                        motionDetected = true;
-                        break;
-                    }
-                }
-                if (motionDetected) {
-                    break;
+                if (brightness > threshold) {
+                    return true;
                 }
             }
 
-            return motionDetected;
+            return false;
+        }
+
+        function startBeep() {
+            // Replace this with your beep logic
+            console.log("Beep start");
+            isBeeping = true;
+        }
+
+        function stopBeep() {
+            // Replace this with your beep logic
+            console.log("Beep stop");
+            isBeeping = false;
         }
     </script>
 </body>
