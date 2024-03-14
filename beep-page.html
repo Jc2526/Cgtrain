@@ -16,6 +16,9 @@
   <a-scene embedded arjs="sourceType: webcam;">
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
+
+    <!-- Motion detection message -->
+    <a-text id="motionText" position="-2 3 -5" color="red" align="center" value="Motion"></a-text>
   </a-scene>
 
   <script>
@@ -41,7 +44,7 @@
       tracker.on('track', function(event) {
         if (event.data.length > 0) {
           // Motion detected
-          console.log('Motion Detected');
+          document.getElementById('motionText').setAttribute('value', 'Motion Detected');
           // You can trigger any action here, such as playing an alarm sound or sending an alert
         }
       });
