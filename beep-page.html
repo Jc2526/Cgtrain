@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Occlusion Detection</title>
+  <title>AR Laser Beam Motion Detection</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
 </head>
@@ -12,37 +12,36 @@
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
 
-    <!-- Marker for the object approximately 10 feet away -->
-    <a-marker type="barcode" value="object">
-      <a-sphere position="0 0 -10" radius="0.5" color="blue"></a-sphere>
-    </a-marker>
+    <!-- Laser beam -->
+    <a-entity id="laserBeam" laser-controls="hand: right" raycaster="objects: .intersect-check"></a-entity>
+
+    <!-- Marker for blocking the laser beam -->
+    <a-marker type="barcode" value="blocker" position="0 0 -5" class="intersect-check"></a-marker>
 
     <!-- Motion detection message -->
     <a-text id="motionText" position="0 0 -2" color="red" align="center" value="No Motion"></a-text>
   </a-scene>
 
   <script>
-    // Function to check for occlusion
-    function checkOcclusion() {
-      var marker = document.querySelector('a-marker[type="barcode"][value="object"]');
-      var camera = document.querySelector('a-entity[camera]');
-      var raycaster = new THREE.Raycaster();
+    // Function to check for laser beam intersection
+    function checkLaserBeamIntersection() {
+      var laserBeam = document.getElementById('laserBeam');
+      var blockerMarker = document.querySelector('a-marker[type="barcode"][value="blocker"]');
 
-      // Set raycaster origin to camera position
-      raycaster.setFromCamera({ x: 0, y: 0 }, camera.object3D.children[0]);
+      // Check if the laser beam intersects with the blocker marker
+      var intersection = laserBeam.components.raycaster.getIntersection(blockerMarker.object3D);
 
-      // Check for intersections with the marker
-      var intersects = raycaster.intersectObject(marker.object3D, true);
-
-      if (intersects.length > 0) {
+      if (intersection) {
+        // Laser beam is blocked
         document.getElementById('motionText').setAttribute('value', 'Motion Detected');
       } else {
+        // Laser beam is not blocked
         document.getElementById('motionText').setAttribute('value', 'No Motion');
       }
     }
 
-    // Run occlusion check continuously
-    setInterval(checkOcclusion, 1000); // Adjust interval as needed
+    // Run intersection check continuously
+    setInterval(checkLaserBeamIntersection, 100); // Adjust interval as needed
   </script>
 </body>
 </html>
