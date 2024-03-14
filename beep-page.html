@@ -35,21 +35,30 @@
         }
 
         async function captureFrames() {
+            let prevFrame = null;
             while (isMotionDetectionActive) {
                 const frame = enhancer.getFrame();
                 // Perform motion detection logic here
-                if (motionDetected(frame)) {
+                if (prevFrame && motionDetected(prevFrame, frame)) {
                     playBeepSound();
                 }
+                prevFrame = frame;
                 await new Promise(resolve => requestAnimationFrame(resolve));
             }
         }
 
-        function motionDetected(frame) {
-            // Implement motion detection logic here
-            // For example, compare consecutive frames and check for changes
-            // Return true if motion is detected, false otherwise
-            return false; // Placeholder, replace with actual logic
+        function motionDetected(prevFrame, currentFrame) {
+            const whiteThreshold = 200; // Adjust this threshold as needed
+            const currentImageData = currentFrame.canvas.getContext('2d').getImageData(0, 0, currentFrame.videoWidth, currentFrame.videoHeight).data;
+
+            for (let i = 0; i < currentImageData.length; i += 4) {
+                // Check if the pixel is white (R, G, and B values are all above the threshold)
+                if (currentImageData[i] > whiteThreshold && currentImageData[i + 1] > whiteThreshold && currentImageData[i + 2] > whiteThreshold) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         function playBeepSound() {
