@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Distance Measurement</title>
+  <title>AR Occlusion Detection</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
 </head>
@@ -12,33 +12,37 @@
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
 
-    <!-- Marker for measuring distance -->
-    <a-marker type="barcode" value="7">
-      <a-box position="0 0.5 0" color="red" depth="0.1" height="1" width="1"></a-box>
+    <!-- Marker for the object approximately 10 feet away -->
+    <a-marker type="barcode" value="object">
+      <a-sphere position="0 0 -10"></a-sphere>
     </a-marker>
 
-    <!-- Second marker for measuring distance -->
-    <a-marker type="barcode" value="4">
-      <a-box position="1 0.5 0" color="blue" depth="0.1" height="1" width="1"></a-box>
-    </a-marker>
-
-    <!-- Distance measurement text -->
-    <a-text id="distanceText" position="0 0 -2" color="black" align="center" value="Distance:"></a-text>
+    <!-- Motion detection message -->
+    <a-text id="motionText" position="0 0 -2" color="red" align="center" value="No Motion"></a-text>
   </a-scene>
 
   <script>
-    // Event listener for distance measurement
-    document.addEventListener('arjs-detection', function(event) {
-      var marker7 = document.querySelector('a-marker[type="barcode"][value="7"]');
-      var marker4 = document.querySelector('a-marker[type="barcode"][value="4"]');
+    // Function to check for occlusion
+    function checkOcclusion() {
+      var marker = document.querySelector('a-marker[type="barcode"][value="object"]');
+      var camera = document.querySelector('a-entity[camera]');
+      var raycaster = new THREE.Raycaster();
 
-      if (marker7.object3D.visible && marker4.object3D.visible) {
-        var distance = marker7.object3D.position.distanceTo(marker4.object3D.position);
-        document.getElementById('distanceText').setAttribute('value', 'Distance: ' + distance.toFixed(2) + ' meters');
+      // Set raycaster origin to camera position
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera.object3D.children[0]);
+
+      // Check for intersections with the marker
+      var intersects = raycaster.intersectObject(marker.object3D, true);
+
+      if (intersects.length > 0) {
+        document.getElementById('motionText').setAttribute('value', 'Motion Detected');
       } else {
-        document.getElementById('distanceText').setAttribute('value', 'Distance: Unknown');
+        document.getElementById('motionText').setAttribute('value', 'No Motion');
       }
-    });
+    }
+
+    // Run occlusion check continuously
+    setInterval(checkOcclusion, 1000); // Adjust interval as needed
   </script>
 </body>
 </html>
