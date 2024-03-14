@@ -18,8 +18,10 @@
   </a-scene>
 
   <script>
-    // Variables to store previous frame data
+    // Variables to store previous frame data and screen dimensions
     var prevImageData;
+    var screenWidth;
+    var screenHeight;
 
     // Initialize motion detection
     function initMotionDetection() {
@@ -31,13 +33,16 @@
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
+      screenWidth = canvas.width;
+      screenHeight = canvas.height;
+
       // Function to compare frames for motion
       function detectMotion() {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 
         if (prevImageData) {
-          var motionDetected = jsfeat.motion_detection(prevImageData, imageData, 30);
+          var motionDetected = calculateMotion(prevImageData, imageData);
           if (motionDetected) {
             document.getElementById('motionText').setAttribute('value', 'Motion Detected');
           } else {
@@ -51,6 +56,25 @@
       }
 
       detectMotion();
+    }
+
+    // Calculate motion based on object covering half of the screen
+    function calculateMotion(prevImageData, currentImageData) {
+      var coveredArea = 0;
+
+      for (var i = 0; i < prevImageData.data.length; i += 4) {
+        var prevPixel = prevImageData.data[i];
+        var currentPixel = currentImageData.data[i];
+
+        if (prevPixel !== currentPixel) {
+          coveredArea++;
+        }
+      }
+
+      var totalArea = screenWidth * screenHeight;
+      var coveredPercentage = (coveredArea / totalArea) * 100;
+
+      return coveredPercentage > 50; // Motion detected if more than 50% of the screen is covered
     }
 
     // Main function
