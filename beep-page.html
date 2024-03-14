@@ -4,41 +4,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebAR with Motion Detection</title>
+  <title>AR Motion Detection</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tracking/build/tracking-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tracking/build/data/face-min.js"></script>
 </head>
 <body>
   <a-scene embedded arjs="sourceType: webcam;">
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
-
-    <!-- Ring -->
-    <a-ring position="0 0 -3" radius-inner="0.1" radius-outer="0.15" color="blue"></a-ring>
-
-    <!-- Motion detection message -->
-    <a-text id="motionText" position="0 0.5 -2" color="red" align="center" value="Motion"></a-text>
   </a-scene>
 
-  <audio id="beepSound" src="beep.mp3"></audio> <!-- Beep sound -->
-
   <script>
-    // Event listener for motion detection
-    window.addEventListener('devicemotion', function(event) {
-      // Calculate total acceleration
-      var acceleration = Math.sqrt(event.acceleration.x ** 2 + event.acceleration.y ** 2 + event.acceleration.z ** 2);
+    // Load the pre-trained MobileNet model
+    async function loadModel() {
+      const model = await mobilenet.load();
+      return model;
+    }
 
-      // Check if motion is detected within the ring (threshold radius)
-      var isInRing = Math.abs(event.acceleration.x) < 0.2 && Math.abs(event.acceleration.y) < 0.2;
+    // Detect motion using face detection
+    async function detectMotion(model) {
+      const video = document.querySelector('video');
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
 
-      // If motion is detected within the ring and total acceleration is above a certain threshold, update message and play beep sound
-      if (isInRing && acceleration > 1) {
-        document.getElementById('motionText').setAttribute('value', 'Motion Detected');
-        document.getElementById('beepSound').play(); // Play the beep sound
-      } else {
-        document.getElementById('motionText').setAttribute('value', 'Motion');
-      }
-    });
+      const tracker = new tracking.ObjectTracker('face');
+      tracker.setInitialScale(4);
+      tracker.setStepSize(2);
+      tracker.setEdgesDensity(0.1);
+
+      tracking.track(video, tracker, { camera: true });
+
+      tracker.on('track', function(event) {
+        if (event.data.length > 0) {
+          // Motion detected
+          console.log('Motion Detected');
+          // You can trigger any action here, such as playing an alarm sound or sending an alert
+        }
+      });
+    }
+
+    // Main function
+    async function main() {
+      const model = await loadModel();
+      detectMotion(model);
+    }
+
+    main();
   </script>
 </body>
 </html>
