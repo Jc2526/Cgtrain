@@ -1,71 +1,59 @@
 
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Motion Detection with Dynamsoft Camera Enhancer</title>
-    <script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Person Tracking with Dynamsoft Camera Enhancer</title>
+<script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
 </head>
-
 <body>
-    <button id="startButton">Start Motion Detection</button>
-    <button id="stopButton">Stop Motion Detection</button>
-    <audio id="beepSound" src="beep.mp3"></audio>
     <div id="cameraFeed"></div>
 
     <script>
         let enhancer = null;
-        let isMotionDetectionActive = false;
-        const beepSound = document.getElementById('beepSound');
+        const cameraFeed = document.getElementById('cameraFeed');
 
-        document.getElementById('startButton').addEventListener('click', startMotionDetection);
-        document.getElementById('stopButton').addEventListener('click', stopMotionDetection);
-
-        async function startMotionDetection() {
-            isMotionDetectionActive = true;
+        async function startPersonTracking() {
             enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
-            document.getElementById("cameraFeed").appendChild(enhancer.getUIElement());
+            cameraFeed.appendChild(enhancer.getUIElement());
             await enhancer.open(true);
-            captureFrames();
+            trackPerson();
         }
 
-        function stopMotionDetection() {
-            isMotionDetectionActive = false;
-            enhancer && enhancer.close();
-        }
-
-        async function captureFrames() {
-            let prevFrame = null;
-            while (isMotionDetectionActive) {
+        async function trackPerson() {
+            while (true) {
                 const frame = enhancer.getFrame();
-                // Perform motion detection logic here
-                if (prevFrame && motionDetected(prevFrame, frame)) {
-                    playBeepSound();
+                const personRect = detectPerson(frame.canvas);
+                if (personRect) {
+                    highlightPerson(personRect);
                 }
-                prevFrame = frame;
                 await new Promise(resolve => requestAnimationFrame(resolve));
             }
         }
 
-        function motionDetected(prevFrame, currentFrame) {
-            const whiteThreshold = 200; // Adjust this threshold as needed
-            const currentImageData = currentFrame.canvas.getContext('2d').getImageData(0, 0, currentFrame.videoWidth, currentFrame.videoHeight).data;
-
-            for (let i = 0; i < currentImageData.length; i += 4) {
-                // Check if the pixel is white (R, G, and B values are all above the threshold)
-                if (currentImageData[i] > whiteThreshold && currentImageData[i + 1] > whiteThreshold && currentImageData[i + 2] > whiteThreshold) {
-                    return true;
-                }
-            }
-
-            return false;
+        function detectPerson(canvas) {
+            // Implement your person detection logic here
+            // This is just a placeholder, replace it with your actual detection algorithm
+            // For example, you can use TensorFlow.js, OpenCV.js, or any other library for person detection
+            // You would need to draw a bounding box around the detected person
+            // and return the coordinates of the bounding box (x, y, width, height)
+            return {
+                x: 100,
+                y: 100,
+                width: 200,
+                height: 300
+            };
         }
 
-        function playBeepSound() {
-            beepSound.currentTime = 0;
-            beepSound.play();
+        function highlightPerson(personRect) {
+            const ctx = enhancer.getCanvasContext();
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(personRect.x, personRect.y, personRect.width, personRect.height);
         }
+
+        startPersonTracking();
     </script>
 </body>
-
 </html>
