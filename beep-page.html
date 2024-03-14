@@ -10,14 +10,11 @@
 </head>
 <body>
   <a-scene embedded arjs="sourceType: webcam;">
-    <!-- Object in AR environment -->
-    <a-box id="box" position="0 0 -3" rotation="0 45 0" color="#4CC3D9" static-body collider-check></a-box>
-
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
 
     <!-- Motion detection message -->
-    <a-text id="motionText" position="0 0.5 -2" color="red" align="center" value=""></a-text>
+    <a-text id="motionText" position="0 0.5 -2" color="red" align="center" value="Motion"></a-text>
   </a-scene>
 
   <script>
@@ -30,7 +27,7 @@
       if (acceleration > 5) {
         document.getElementById('motionText').setAttribute('value', 'Motion Detected');
       } else {
-        document.getElementById('motionText').setAttribute('value', '');
+        document.getElementById('motionText').setAttribute('value', 'Motion');
       }
     });
   </script>
