@@ -13,6 +13,9 @@
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
 
+    <!-- Ring -->
+    <a-ring position="0 0 -3" radius-inner="0.1" radius-outer="0.15" color="blue"></a-ring>
+
     <!-- Motion detection message -->
     <a-text id="motionText" position="0 0.5 -2" color="red" align="center" value="Motion"></a-text>
   </a-scene>
@@ -23,8 +26,11 @@
       // Calculate total acceleration
       var acceleration = Math.sqrt(event.acceleration.x ** 2 + event.acceleration.y ** 2 + event.acceleration.z ** 2);
 
-      // If total acceleration is above a threshold, motion is detected
-      if (acceleration > 5) {
+      // Check if motion is detected within the ring (threshold radius)
+      var isInRing = Math.abs(event.acceleration.x) < 0.5 && Math.abs(event.acceleration.y) < 0.5;
+
+      // If motion is detected within the ring and total acceleration is above a threshold, update message
+      if (isInRing && acceleration > 3) {
         document.getElementById('motionText').setAttribute('value', 'Motion Detected');
       } else {
         document.getElementById('motionText').setAttribute('value', 'Motion');
