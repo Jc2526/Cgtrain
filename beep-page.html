@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Motion Detection</title>
+  <title>AR Motion Detection with Distance Measurement</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsfeat"></script>
 </head>
 <body>
   <a-scene embedded arjs="sourceType: webcam;">
@@ -14,75 +13,51 @@
     <a-entity camera></a-entity>
 
     <!-- Motion detection message -->
-    <a-text id="motionText" position="0 0 -5" color="red" align="center" value="Motion"></a-text>
+    <a-text id="motionText" position="0 0.5 -2" color="red" align="center" value="Motion"></a-text>
+
+    <!-- Distance measurement text -->
+    <a-text id="distanceText" position="0 -0.5 -2" color="blue" align="center" value="Distance:"></a-text>
   </a-scene>
 
   <script>
-    // Variables to store previous frame data and screen dimensions
-    var prevImageData;
-    var screenWidth;
-    var screenHeight;
+    // Event listener for motion detection
+    window.addEventListener('devicemotion', function(event) {
+      // Calculate total acceleration
+      var acceleration = Math.sqrt(event.acceleration.x ** 2 + event.acceleration.y ** 2 + event.acceleration.z ** 2);
 
-    // Initialize motion detection
-    function initMotionDetection() {
-      var video = document.querySelector('video');
-      var canvas = document.createElement('canvas');
-      var context = canvas.getContext('2d');
-
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      screenWidth = canvas.width;
-      screenHeight = canvas.height;
-
-      // Function to compare frames for motion
-      function detectMotion() {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-        if (prevImageData) {
-          var motionDetected = calculateMotion(prevImageData, imageData);
-          if (motionDetected) {
-            document.getElementById('motionText').setAttribute('value', 'Motion Detected');
-          } else {
-            document.getElementById('motionText').setAttribute('value', 'Motion');
-          }
-        }
-
-        prevImageData = new jsfeat.matrix_t(canvas.width, canvas.height, jsfeat.U8_t | jsfeat.C1_t);
-        prevImageData.data.set(imageData.data);
-        requestAnimationFrame(detectMotion);
+      // Check if motion is detected based on acceleration
+      if (acceleration > 1) { // Adjust threshold as needed
+        document.getElementById('motionText').setAttribute('value', 'Motion Detected');
+      } else {
+        document.getElementById('motionText').setAttribute('value', 'Motion');
       }
+    });
 
-      detectMotion();
+    // Event listener for device orientation change
+    window.addEventListener('deviceorientation', function(event) {
+      // Calculate distance based on device orientation (rough estimation)
+      var distance = calculateDistance(event.alpha, event.beta, event.gamma);
+      document.getElementById('distanceText').setAttribute('value', 'Distance: ' + distance.toFixed(2) + ' meters');
+    });
+
+    // Calculate distance based on device orientation (rough estimation)
+    function calculateDistance(alpha, beta, gamma) {
+      // Distance calculation algorithm (rough estimation)
+      // This is a very simplified and approximate calculation
+      // It assumes the device is held at a constant height from the ground
+      // and the angle of elevation (beta) is used to estimate the distance
+
+      // Height of the device from the ground (in meters)
+      var deviceHeight = 1.5; // Adjust this value as needed
+
+      // Angle of elevation (beta) in radians
+      var betaRad = beta * (Math.PI / 180);
+
+      // Distance calculation (simple trigonometry)
+      var distance = deviceHeight / Math.tan(betaRad);
+
+      return distance;
     }
-
-    // Calculate motion based on object covering half of the screen
-    function calculateMotion(prevImageData, currentImageData) {
-      var coveredArea = 0;
-
-      for (var i = 0; i < prevImageData.data.length; i += 4) {
-        var prevPixel = prevImageData.data[i];
-        var currentPixel = currentImageData.data[i];
-
-        if (prevPixel !== currentPixel) {
-          coveredArea++;
-        }
-      }
-
-      var totalArea = screenWidth * screenHeight;
-      var coveredPercentage = (coveredArea / totalArea) * 100;
-
-      return coveredPercentage > 50; // Motion detected if more than 50% of the screen is covered
-    }
-
-    // Main function
-    function main() {
-      initMotionDetection();
-    }
-
-    main();
   </script>
 </body>
 </html>
