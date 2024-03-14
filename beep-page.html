@@ -4,19 +4,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebXR VR Environment with Passthrough</title>
+  <title>WebAR with Collision Detection and Beep</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-    <!-- Virtual environment -->
-    <a-box position="0 0 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-    <a-sphere position="-1 0 -3" radius="0.5" color="#EF2D5E"></a-sphere>
-    <a-cylinder position="1 0 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-    <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+  <a-scene embedded arjs="sourceType: webcam;">
+    <!-- Object in AR environment -->
+    <a-box id="box" position="0 0 -3" rotation="0 45 0" color="#4CC3D9" static-body collider-check></a-box>
 
     <!-- Camera passthrough -->
     <a-entity camera></a-entity>
   </a-scene>
+
+  <script>
+    // Event listener for collision detection
+    AFRAME.registerComponent('collider-check', {
+      init: function () {
+        this.el.addEventListener('collide', function (evt) {
+          // When something collides with the object
+          if (evt.detail.body.el.id === 'box') {
+            // Beep sound
+            var context = new AudioContext();
+            var oscillator = context.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(1000, context.currentTime);
+            oscillator.connect(context.destination);
+            oscillator.start();
+            setTimeout(function(){
+              oscillator.stop();
+            }, 200); // Beep duration in milliseconds
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
