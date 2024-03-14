@@ -3,74 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optical Flow Measurement</title>
-    <script src="https://cdn.jsdelivr.net/npm/tracking/build/tracking.js"></script>
+    <title>Object Tracking Demo</title>
     <style>
-        #video-container {
-            position: relative;
-            width: 100%;
-            max-width: 640px;
-        }
         #video {
             width: 100%;
             height: auto;
-        }
-        #movement {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: rgba(255, 255, 255, 0.7);
-            padding: 5px;
-            border-radius: 5px;
+            border: 1px solid black;
         }
     </style>
 </head>
 <body>
-    <h1>Optical Flow Measurement</h1>
-    <div id="video-container">
-        <video id="video" autoplay></video>
-        <div id="movement"></div>
-    </div>
+    <h1>Object Tracking Demo</h1>
+    <video id="video" autoplay playsinline></video>
 
     <script>
-        // Initialize video element and canvas
-        var video = document.getElementById('video');
-        var canvas = document.createElement('canvas');
-        var context = canvas.getContext('2d');
+        // Access the camera and stream the video to the video element
+        async function startVideo() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const videoElement = document.getElementById('video');
+                videoElement.srcObject = stream;
+            } catch (error) {
+                console.error('Error accessing the camera:', error);
+            }
+        }
 
-        // Set up video dimensions
-        var width, height;
-        video.addEventListener('loadedmetadata', function() {
-            width = video.videoWidth;
-            height = video.videoHeight;
-            canvas.width = width;
-            canvas.height = height;
-        });
-
-        // Start tracking optical flow
-        tracking.track('#video', new tracking.OpticalFlowTracker());
-        tracking.track('#video', new tracking.ColorTracker(['magenta']));
-
-        // Update movement value on the webpage
-        tracking.OpticalFlowTracker.prototype.onUpdate = function() {
-            var movements = this.tracks.map(function(track) {
-                return Math.sqrt(track.dx * track.dx + track.dy * track.dy);
-            });
-            var averageMovement = movements.reduce(function(sum, value) {
-                return sum + value;
-            }, 0) / movements.length;
-
-            document.getElementById('movement').innerText = 'Average Movement: ' + averageMovement.toFixed(2);
+        // Start the video stream when the page loads
+        window.onload = function () {
+            startVideo();
         };
-
-        // Access the webcam stream
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function(stream) {
-                video.srcObject = stream;
-            })
-            .catch(function(err) {
-                console.error('Error accessing the webcam:', err);
-            });
     </script>
 </body>
 </html>
