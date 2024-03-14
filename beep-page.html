@@ -2,88 +2,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Motion-Triggered Photo Capture</title>
-<style>
-    #video {
-        display: none; /* Hide the video element */
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motion Detection</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
     }
-</style>
+
+    .video-container {
+      position: relative;
+      width: 640px; /* Adjust as needed */
+      height: 360px; /* Adjust as needed */
+      margin: 0 auto;
+    }
+
+    #video, #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #status {
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
+  <div class="video-container">
     <video id="video" autoplay></video>
-    <canvas id="canvas" style="display: none;"></canvas>
-    <button id="captureButton">Capture</button>
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const captureButton = document.getElementById('captureButton');
-        let isCapturing = false;
+    <canvas id="canvas"></canvas>
+  </div>
+  <div id="status"></div>
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const status = document.getElementById('status');
+    let isDetecting = false;
 
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(function(stream) {
-                video.srcObject = stream;
-                video.onloadedmetadata = function(e) {
-                    video.play();
-                    detectMotion();
-                };
-            })
-            .catch(function(err) {
-                console.log("An error occurred: " + err);
-            });
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+        video.play();
+      })
+      .catch(err => console.error('Error accessing webcam:', err));
 
-        async function detectMotion() {
-            const prevFrame = captureFrame();
-            while (true) {
-                await new Promise(resolve => requestAnimationFrame(resolve));
-                const currentFrame = captureFrame();
-                const motionDetected = detectMotionBetweenFrames(prevFrame, currentFrame);
-                if (motionDetected && !isCapturing) {
-                    takePhoto();
-                }
-                prevFrame.data.set(currentFrame.data); // Update previous frame
-            }
+    video.addEventListener('play', () => {
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      const previousFrame = new ImageData(width, height);
+
+      function detectMotion() {
+        ctx.drawImage(video, 0, 0, width, height);
+        const currentFrame = ctx.getImageData(0, 0, width, height);
+        if (isDifferent(previousFrame, currentFrame)) {
+          status.textContent = 'Motion Detected!';
+        } else {
+          status.textContent = 'No Motion';
         }
+        previousFrame.data.set(currentFrame.data);
+        requestAnimationFrame(detectMotion);
+      }
 
-        function captureFrame() {
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            return ctx.getImageData(0, 0, canvas.width, canvas.height);
+      function isDifferent(img1, img2) {
+        const threshold = 50;
+        for (let i = 0; i < img1.data.length; i += 4) {
+          const diff = Math.abs(img1.data[i] - img2.data[i]);
+          if (diff > threshold) {
+            return true;
+          }
         }
+        return false;
+      }
 
-        function detectMotionBetweenFrames(prevFrame, currentFrame) {
-            const pixelsPrev = prevFrame.data;
-            const pixelsCurr = currentFrame.data;
-            const threshold = 100; // Adjust this threshold as needed
-            let motionDetected = false;
-
-            for (let i = 0; i < pixelsCurr.length; i += 4) {
-                const brightnessPrev = (pixelsPrev[i] + pixelsPrev[i + 1] + pixelsPrev[i + 2]) / 3;
-                const brightnessCurr = (pixelsCurr[i] + pixelsCurr[i + 1] + pixelsCurr[i + 2]) / 3;
-
-                if (Math.abs(brightnessCurr - brightnessPrev) > threshold) {
-                    motionDetected = true;
-                    break;
-                }
-            }
-
-            return motionDetected;
-        }
-
-        function takePhoto() {
-            isCapturing = true;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const photo = canvas.toDataURL('image/jpeg');
-            // Here you can send the photo to a server, save it locally, or perform any other action
-            console.log('Photo taken:', photo);
-            setTimeout(() => { isCapturing = false; }, 5000); // Prevent continuous capturing
-        }
-
-        captureButton.addEventListener('click', () => {
-            takePhoto();
-        });
-    </script>
+      detectMotion();
+    });
+  </script>
 </body>
 </html>
