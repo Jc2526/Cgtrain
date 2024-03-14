@@ -20,6 +20,8 @@
     <a-text id="motionText" position="0 0.5 -2" color="red" align="center" value="Motion"></a-text>
   </a-scene>
 
+  <audio id="beepSound" src="beep.mp3"></audio> <!-- Beep sound -->
+
   <script>
     // Event listener for motion detection
     window.addEventListener('devicemotion', function(event) {
@@ -27,11 +29,12 @@
       var acceleration = Math.sqrt(event.acceleration.x ** 2 + event.acceleration.y ** 2 + event.acceleration.z ** 2);
 
       // Check if motion is detected within the ring (threshold radius)
-      var isInRing = Math.abs(event.acceleration.x) < 0.1 && Math.abs(event.acceleration.y) < 0.1;
+      var isInRing = Math.abs(event.acceleration.x) < 0.2 && Math.abs(event.acceleration.y) < 0.2;
 
-      // If motion is detected within the ring and total acceleration is above a certain threshold, update message
-      if (isInRing && acceleration > 0.5) {
+      // If motion is detected within the ring and total acceleration is above a certain threshold, update message and play beep sound
+      if (isInRing && acceleration > 1) {
         document.getElementById('motionText').setAttribute('value', 'Motion Detected');
+        document.getElementById('beepSound').play(); // Play the beep sound
       } else {
         document.getElementById('motionText').setAttribute('value', 'Motion');
       }
