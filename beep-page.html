@@ -1,47 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Laser Beam Motion Detection</title>
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distance Measurement</title>
+    <style>
+        #video-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        #video {
+            width: 100%;
+            height: auto;
+        }
+        #output {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 5px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-    <!-- Camera passthrough -->
-    <a-entity camera></a-entity>
+    <div id="video-container">
+        <video id="video" autoplay playsinline></video>
+        <div id="output"></div>
+    </div>
 
-    <!-- Laser beam -->
-    <a-entity id="laserBeam" laser-controls="hand: right" raycaster="objects: .intersect-check"></a-entity>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script>
+        // Load the COCO-SSD model
+        async function loadModel() {
+            return await cocoSsd.load();
+        }
 
-    <!-- Marker for blocking the laser beam -->
-    <a-marker type="barcode" value="blocker" position="0 0 -5" class="intersect-check"></a-marker>
+        // Detect objects in the video stream
+        async function detectObjects(model, video) {
+            const predictions = await model.detect(video);
+            return predictions;
+        }
 
-    <!-- Motion detection message -->
-    <a-text id="motionText" position="0 0 -2" color="red" align="center" value="No Motion"></a-text>
-  </a-scene>
+        // Calculate distance from object
+        function calculateDistance(predictions) {
+            // Your distance calculation logic here
+            // This is just a placeholder
+            return predictions.length > 0 ? 'Distance: ' + predictions[0].bbox[2] + ' pixels' : 'No object detected';
+        }
 
-  <script>
-    // Function to check for laser beam intersection
-    function checkLaserBeamIntersection() {
-      var laserBeam = document.getElementById('laserBeam');
-      var blockerMarker = document.querySelector('a-marker[type="barcode"][value="blocker"]');
+        // Main function
+        async function main() {
+            const video = document.getElementById('video');
+            const output = document.getElementById('output');
 
-      // Check if the laser beam intersects with the blocker marker
-      var intersection = laserBeam.components.raycaster.getIntersection(blockerMarker.object3D);
+            // Load the model
+            const model = await loadModel();
 
-      if (intersection) {
-        // Laser beam is blocked
-        document.getElementById('motionText').setAttribute('value', 'Motion Detected');
-      } else {
-        // Laser beam is not blocked
-        document.getElementById('motionText').setAttribute('value', 'No Motion');
-      }
-    }
+            // Access the device camera
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function (stream) {
+                        video.srcObject = stream;
+                        video.play();
+                    })
+                    .catch(function (error) {
+                        console.error('Error accessing the camera:', error);
+                    });
+            }
 
-    // Run intersection check continuously
-    setInterval(checkLaserBeamIntersection, 100); // Adjust interval as needed
-  </script>
+            // Continuously detect objects and update distance
+            setInterval(async () => {
+                const predictions = await detectObjects(model, video);
+                const distance = calculateDistance(predictions);
+                output.innerText = distance;
+            }, 1000); // Update every second
+        }
+
+        // Initialize the main function when the page is loaded
+        window.onload = main;
+    </script>
 </body>
 </html>
