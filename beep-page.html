@@ -1,80 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Distance Tracker</title>
-<style>
-    #video-container {
-        position: relative;
-        width: 100%;
-        height: auto;
-        margin: 0 auto;
-        overflow: hidden;
-    }
-    #video {
-        width: 100%;
-        height: auto;
-    }
-    #distance-output {
-        font-size: 24px;
-        font-weight: bold;
-        position: fixed;
-        bottom: 10px;
-        left: 10px;
-        background-color: rgba(255, 255, 255, 0.5);
-        padding: 10px;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distance Measurement</title>
+    <style>
+        /* Add your CSS styles here */
+    </style>
 </head>
 <body>
-<div id="video-container">
-    <video id="video" autoplay playsinline></video>
-</div>
-<div id="distance-output"></div>
+    <h1>Distance Measurement</h1>
+    <div>
+        <button onclick="measureDistance()">Measure Distance</button>
+    </div>
+    <p id="distanceResult"></p>
 
-<script>
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(function(stream) {
-    var video = document.getElementById('video');
-    video.srcObject = stream;
-    video.play();
+    <script>
+        async function measureDistance() {
+            const imageSrc = 'path_to_your_image.jpg'; // Path to your static image
 
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
-    var width = video.width;
-    var height = video.height;
-    canvas.width = width;
-    canvas.height = height;
+            const image = new Image();
+            image.src = imageSrc;
 
-    setInterval(function() {
-        context.drawImage(video, 0, 0, width, height);
-        var imageData = context.getImageData(0, 0, width, height);
-
-        var closestObjectDistance = 0;
-
-        for (var i = 0; i < imageData.data.length; i += 4) {
-            var red = imageData.data[i];
-            var green = imageData.data[i + 1];
-            var blue = imageData.data[i + 2];
-
-            var brightness = (red + green + blue) / 3;
-            if (brightness === 255) {
-                closestObjectDistance = 500; // Max distance (white)
-                break;
-            } else if (brightness > 0) {
-                closestObjectDistance = 1; // Closest distance (non-white)
-                break;
-            }
+            image.onload = function() {
+                const distance = estimateDistance(image);
+                displayResult(distance);
+            };
         }
 
-        var distanceOutput = document.getElementById('distance-output');
-        distanceOutput.textContent = "Closest object distance: " + closestObjectDistance + "px";
-    }, 500); // Adjust interval as needed
-})
-.catch(function(err) {
-    console.error('Error accessing the camera.', err);
-});
-</script>
+        function estimateDistance(image) {
+            // Here you would use image processing techniques
+            // to analyze the image and estimate the distance of the object.
+            // This could involve edge detection, object recognition, or other computer vision algorithms.
+            // For simplicity, let's assume a static value for demonstration.
+
+            // For demonstration purposes, let's assume that the distance is 1 pixel if the image width is less than 100 pixels,
+            // otherwise, assume the distance is 500 pixels.
+            const distance = image.width < 100 ? 1 : 500;
+            return distance;
+        }
+
+        function displayResult(distance) {
+            const resultElement = document.getElementById('distanceResult');
+            resultElement.textContent = `Estimated Distance: ${distance} pixels`;
+        }
+    </script>
 </body>
 </html>
