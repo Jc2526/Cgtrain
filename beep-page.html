@@ -4,56 +4,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Person Tracking with Dynamsoft Camera Enhancer</title>
-<script src="https://unpkg.com/dynamsoft-camera-enhancer@2.1.0/dist/dce.js"></script>
+<title>Motion-Triggered Photo Capture</title>
+<style>
+    #video {
+        display: none; /* Hide the video element */
+    }
+</style>
 </head>
 <body>
-    <div id="cameraFeed"></div>
-
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <button id="captureButton">Capture</button>
     <script>
-        let enhancer = null;
-        const cameraFeed = document.getElementById('cameraFeed');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('captureButton');
+        let isCapturing = false;
 
-        async function startPersonTracking() {
-            enhancer = await Dynamsoft.DCE.CameraEnhancer.createInstance();
-            cameraFeed.appendChild(enhancer.getUIElement());
-            await enhancer.open(true);
-            trackPerson();
-        }
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.onloadedmetadata = function(e) {
+                    video.play();
+                    detectMotion();
+                };
+            })
+            .catch(function(err) {
+                console.log("An error occurred: " + err);
+            });
 
-        async function trackPerson() {
+        async function detectMotion() {
+            const prevFrame = captureFrame();
             while (true) {
-                const frame = enhancer.getFrame();
-                const personRect = detectPerson(frame.canvas);
-                if (personRect) {
-                    highlightPerson(personRect);
-                }
                 await new Promise(resolve => requestAnimationFrame(resolve));
+                const currentFrame = captureFrame();
+                const motionDetected = detectMotionBetweenFrames(prevFrame, currentFrame);
+                if (motionDetected && !isCapturing) {
+                    takePhoto();
+                }
+                prevFrame.data.set(currentFrame.data); // Update previous frame
             }
         }
 
-        function detectPerson(canvas) {
-            // Implement your person detection logic here
-            // This is just a placeholder, replace it with your actual detection algorithm
-            // For example, you can use TensorFlow.js, OpenCV.js, or any other library for person detection
-            // You would need to draw a bounding box around the detected person
-            // and return the coordinates of the bounding box (x, y, width, height)
-            return {
-                x: 100,
-                y: 100,
-                width: 200,
-                height: 300
-            };
+        function captureFrame() {
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
 
-        function highlightPerson(personRect) {
-            const ctx = enhancer.getCanvasContext();
-            ctx.strokeStyle = 'red';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(personRect.x, personRect.y, personRect.width, personRect.height);
+        function detectMotionBetweenFrames(prevFrame, currentFrame) {
+            const pixelsPrev = prevFrame.data;
+            const pixelsCurr = currentFrame.data;
+            const threshold = 100; // Adjust this threshold as needed
+            let motionDetected = false;
+
+            for (let i = 0; i < pixelsCurr.length; i += 4) {
+                const brightnessPrev = (pixelsPrev[i] + pixelsPrev[i + 1] + pixelsPrev[i + 2]) / 3;
+                const brightnessCurr = (pixelsCurr[i] + pixelsCurr[i + 1] + pixelsCurr[i + 2]) / 3;
+
+                if (Math.abs(brightnessCurr - brightnessPrev) > threshold) {
+                    motionDetected = true;
+                    break;
+                }
+            }
+
+            return motionDetected;
         }
 
-        startPersonTracking();
+        function takePhoto() {
+            isCapturing = true;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const photo = canvas.toDataURL('image/jpeg');
+            // Here you can send the photo to a server, save it locally, or perform any other action
+            console.log('Photo taken:', photo);
+            setTimeout(() => { isCapturing = false; }, 5000); // Prevent continuous capturing
+        }
+
+        captureButton.addEventListener('click', () => {
+            takePhoto();
+        });
     </script>
 </body>
 </html>
