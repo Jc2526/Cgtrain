@@ -62,6 +62,15 @@
 
             document.getElementById('movement').innerText = 'Average Movement: ' + averageMovement.toFixed(2);
         };
+
+        // Access the webcam stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                video.srcObject = stream;
+            })
+            .catch(function(err) {
+                console.error('Error accessing the webcam:', err);
+            });
     </script>
 </body>
 </html>
