@@ -4,88 +4,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Motion Detection</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
-
-    .video-container {
-      position: relative;
-      width: 640px; /* Adjust as needed */
-      height: 360px; /* Adjust as needed */
-      margin: 0 auto;
-    }
-
-    #video, #canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    #status {
-      text-align: center;
-      margin-top: 20px;
-    }
-  </style>
+  <title>VR Environment with Person Integration</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
 </head>
 <body>
-  <div class="video-container">
-    <video id="video" autoplay></video>
-    <canvas id="canvas"></canvas>
-  </div>
-  <div id="status"></div>
-  <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const status = document.getElementById('status');
-    let isDetecting = false;
+  <a-scene>
+    <!-- Virtual environment -->
+    <a-sky color="#6EBAA7"></a-sky>
+    <a-box position="0 1 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
+    <a-sphere position="-1 1.25 -3" radius="1.25" color="#EF2D5E"></a-sphere>
+    <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
+    <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
 
+    <!-- Person integration -->
+    <a-entity camera position="0 1.6 0">
+      <a-entity id="videoContainer" geometry="primitive: plane; width: 1.6; height: 0.9" material="shader: flat; src: #video"></a-entity>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    // Access the webcam feed
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
+        const video = document.createElement('video');
         video.srcObject = stream;
         video.play();
+
+        const videoTexture = document.querySelector('#videoContainer');
+        videoTexture.setAttribute('material', 'src', video);
       })
       .catch(err => console.error('Error accessing webcam:', err));
-
-    video.addEventListener('play', () => {
-      const width = video.videoWidth;
-      const height = video.videoHeight;
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext('2d');
-      const previousFrame = new ImageData(width, height);
-
-      function detectMotion() {
-        ctx.drawImage(video, 0, 0, width, height);
-        const currentFrame = ctx.getImageData(0, 0, width, height);
-        if (isDifferent(previousFrame, currentFrame)) {
-          status.textContent = 'Motion Detected!';
-        } else {
-          status.textContent = 'No Motion';
-        }
-        previousFrame.data.set(currentFrame.data);
-        requestAnimationFrame(detectMotion);
-      }
-
-      function isDifferent(img1, img2) {
-        const threshold = 50;
-        for (let i = 0; i < img1.data.length; i += 4) {
-          const diff = Math.abs(img1.data[i] - img2.data[i]);
-          if (diff > threshold) {
-            return true;
-          }
-        }
-        return false;
-      }
-
-      detectMotion();
-    });
   </script>
 </body>
 </html>
