@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distance Measurement</title>
+    <title>Optical Flow Measurement</title>
+    <script src="https://cdn.jsdelivr.net/npm/tracking/build/tracking.js"></script>
     <style>
         #video-container {
             position: relative;
             width: 100%;
-            max-width: 600px;
+            max-width: 640px;
         }
         #video {
             width: 100%;
             height: auto;
         }
-        #output {
+        #movement {
             position: absolute;
-            bottom: 10px;
+            top: 10px;
             left: 10px;
             background-color: rgba(255, 255, 255, 0.7);
             padding: 5px;
@@ -25,62 +26,42 @@
     </style>
 </head>
 <body>
+    <h1>Optical Flow Measurement</h1>
     <div id="video-container">
-        <video id="video" autoplay playsinline></video>
-        <div id="output"></div>
+        <video id="video" autoplay></video>
+        <div id="movement"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script>
-        // Load the COCO-SSD model
-        async function loadModel() {
-            return await cocoSsd.load();
-        }
+        // Initialize video element and canvas
+        var video = document.getElementById('video');
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
 
-        // Detect objects in the video stream
-        async function detectObjects(model, video) {
-            const predictions = await model.detect(video);
-            return predictions;
-        }
+        // Set up video dimensions
+        var width, height;
+        video.addEventListener('loadedmetadata', function() {
+            width = video.videoWidth;
+            height = video.videoHeight;
+            canvas.width = width;
+            canvas.height = height;
+        });
 
-        // Calculate distance from object
-        function calculateDistance(predictions) {
-            // Your distance calculation logic here
-            // This is just a placeholder
-            return predictions.length > 0 ? 'Distance: ' + predictions[0].bbox[2] + ' pixels' : 'No object detected';
-        }
+        // Start tracking optical flow
+        tracking.track('#video', new tracking.OpticalFlowTracker());
+        tracking.track('#video', new tracking.ColorTracker(['magenta']));
 
-        // Main function
-        async function main() {
-            const video = document.getElementById('video');
-            const output = document.getElementById('output');
+        // Update movement value on the webpage
+        tracking.OpticalFlowTracker.prototype.onUpdate = function() {
+            var movements = this.tracks.map(function(track) {
+                return Math.sqrt(track.dx * track.dx + track.dy * track.dy);
+            });
+            var averageMovement = movements.reduce(function(sum, value) {
+                return sum + value;
+            }, 0) / movements.length;
 
-            // Load the model
-            const model = await loadModel();
-
-            // Access the device camera
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function (stream) {
-                        video.srcObject = stream;
-                        video.play();
-                    })
-                    .catch(function (error) {
-                        console.error('Error accessing the camera:', error);
-                    });
-            }
-
-            // Continuously detect objects and update distance
-            setInterval(async () => {
-                const predictions = await detectObjects(model, video);
-                const distance = calculateDistance(predictions);
-                output.innerText = distance;
-            }, 1000); // Update every second
-        }
-
-        // Initialize the main function when the page is loaded
-        window.onload = main;
+            document.getElementById('movement').innerText = 'Average Movement: ' + averageMovement.toFixed(2);
+        };
     </script>
 </body>
 </html>
