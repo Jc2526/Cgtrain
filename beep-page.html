@@ -10,9 +10,13 @@
     <video id="video" width="640" height="480" autoplay playsinline></video>
     <p id="motionStatus">Motion Status: Waiting for motion...</p>
 
+    <!-- Beep sound -->
+    <audio id="beep" src="beep.mp3" preload="auto"></audio>
+
     <script>
         const video = document.getElementById('video');
         const motionStatus = document.getElementById('motionStatus');
+        const beepSound = document.getElementById('beep');
         let motionDetected = false;
 
         // Function to detect motion in the captured image data
@@ -46,6 +50,8 @@
         function updateMotionStatus() {
             if (motionDetected) {
                 motionStatus.textContent = 'Motion detected!';
+                // Play beep sound
+                beepSound.play();
             } else {
                 motionStatus.textContent = 'Waiting for motion...';
             }
