@@ -3,81 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Head Tracking</title>
+    <title>Motion Detector</title>
     <style>
         body {
             margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+        #container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative; /* Ensure the container is positioned relative for absolute positioning of the icon */
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio (responsive video) */
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
+            border-radius: 10px;
         }
         #video {
-            border: 2px solid #333;
-            transform: scaleX(-1); /* Flip video horizontally */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
-        #canvas {
-            border: 2px solid #333;
+        #motionStatus {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+        }
+        #audioControl {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            cursor: pointer;
+        }
+        #motionBox {
+            position: absolute;
+            border: 2px solid red;
+            width: 50px; /* Adjust width as needed */
+            height: 50px; /* Adjust height as needed */
         }
     </style>
 </head>
 <body>
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
+    <div id="container">
+        <h1>Motion Detector</h1>
+        <div id="videoContainer">
+            <video id="video" autoplay playsinline></video>
+            <div id="motionBox"></div>
+        </div>
+        <p id="motionStatus">Motion Status: Waiting for motion...</p>
+        <img id="audioControl" src="audio_off.png" alt="Audio Control">
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
-    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <!-- Audio file for motion detection -->
+    <audio id="motionSound" src="motion_detected.mp3" preload="auto" loop></audio>
+    <!-- Audio file for beep sound -->
+    <audio id="beepSound" src="beep.mp3" preload="auto"></audio>
+
     <script>
-        // Get video element
         const video = document.getElementById('video');
+        const motionStatus = document.getElementById('motionStatus');
+        const motionSound = document.getElementById('motionSound');
+        const beepSound = document.getElementById('beepSound');
+        const audioControl = document.getElementById('audioControl');
+        const motionBox = document.getElementById('motionBox');
+        let motionDetected = false;
 
-        // Load face-landmarks detection model
-        async function runFaceLandmarksDetection() {
-            const model = await faceLandmarksDetection.load(
-                faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
-                { maxFaces: 1 }
-            );
-
-            // Get camera stream using WebRTC
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            video.srcObject = stream;
-
-            // Detect face landmarks in real-time
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-
-            async function detectFaceLandmarks() {
-                const predictions = await model.estimateFaces({
-                    input: video
-                });
-
-                // Render face landmarks on canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                if (predictions.length > 0) {
-                    const keypoints = predictions[0].scaledMesh;
-                    drawKeypoints(ctx, keypoints);
+        // Function to detect motion in the specified region
+        function detectMotionInRegion(imageData, x, y, width, height) {
+            let totalDiff = 0;
+            const pixelCount = width * height * 4; // 4 channels (RGBA) per pixel
+            for (let i = y; i < y + height; i++) {
+                for (let j = x; j < x + width; j++) {
+                    const pixelIndex = (i * imageData.width + j) * 4;
+                    // Calculate the difference between pixel values
+                    const deltaR = Math.abs(imageData.data[pixelIndex] - previousImageData.data[pixelIndex]);
+                    const deltaG = Math.abs(imageData.data[pixelIndex + 1] - previousImageData.data[pixelIndex + 1]);
+                    const deltaB = Math.abs(imageData.data[pixelIndex + 2] - previousImageData.data[pixelIndex + 2]);
+                    // Accumulate total difference
+                    totalDiff += deltaR + deltaG + deltaB;
                 }
-
-                requestAnimationFrame(detectFaceLandmarks);
             }
-
-            detectFaceLandmarks();
+            // Calculate average difference per pixel
+            const avgDiff = totalDiff / pixelCount;
+            // Set motion detection threshold
+            const threshold = 30;
+            // If average difference exceeds threshold, consider it as motion
+            return avgDiff > threshold;
         }
 
-        function drawKeypoints(ctx, keypoints) {
-            for (let i = 0; i < keypoints.length; i++) {
-                const [x, y, z] = keypoints[i];
-                ctx.beginPath();
-                ctx.arc(x, y, 2, 0, 2 * Math.PI);
-                ctx.fillStyle = 'red';
-                ctx.fill();
+        // Function to update motion status display
+        function updateMotionStatus() {
+            if (motionDetected) {
+                motionStatus.textContent = 'Motion detected!';
+                raiseVolume(); // Raise volume when motion detected
+                playBeepSound(); // Play beep sound
+            } else {
+                motionStatus.textContent = 'Waiting for motion...';
+                lowerVolume(); // Lower volume when motion not detected
             }
         }
 
-        runFaceLandmarksDetection();
+        // Function to play beep sound
+        function playBeepSound() {
+            beepSound.play();
+        }
+
+        // Function to raise volume
+        function raiseVolume() {
+            motionSound.volume = 1.0; // Max volume
+            audioControl.src = "audio_on.png"; // Change icon to indicate audio is on
+        }
+
+        // Function to lower volume
+        function lowerVolume() {
+            motionSound.volume = 0.1; // Lower volume
+            audioControl.src = "audio_off.png"; // Change icon to indicate audio is off
+        }
+
+        // Variables to store previous image data
+        let previousImageData = null;
+
+        // Function to update motion detection and status
+        function updateMotionDetection() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+            // Define the coordinates and dimensions of the motion detection region (box)
+            const motionBoxX = Math.floor(canvas.width / 2 - 25); // Center horizontally
+            const motionBoxY = Math.floor(canvas.height / 2 - 25); // Center vertically
+            const motionBoxWidth = 50; // Width of the box
+            const motionBoxHeight = 50; // Height of the box
+
+            detectMotionInRegion(imageData, motionBoxX, motionBoxY, motionBoxWidth, motionBoxHeight)
+                ? motionDetected = true
+                : motionDetected = false;
+
+            // Draw the motion detection box on the canvas
+            context.strokeStyle = 'red';
+            context.strokeRect(motionBoxX, motionBoxY, motionBoxWidth, motionBoxHeight);
+
+            updateMotionStatus();
+            previousImageData = imageData;
+        }
+
+        // Access the camera stream
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                video.play();
+                // Update motion detection and status periodically (every 200 milliseconds)
+                setInterval(updateMotionDetection, 200);
+
+                // Toggle audio control
+                audioControl.addEventListener('click', () => {
+                    if (motionSound.paused) {
+                        motionSound.play();
+                        raiseVolume(); // Raise volume if audio is turned on
+                    } else {
+                        motionSound.pause();
+                        lowerVolume(); // Lower volume if audio is turned off
+                    }
+                });
+            } catch (error) {
+                console.error('Error accessing the camera: ', error);
+            }
+        }
+
+        // Start the camera when the document is loaded
+        document.addEventListener('DOMContentLoaded', startCamera);
     </script>
 </body>
 </html>
