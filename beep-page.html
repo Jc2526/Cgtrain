@@ -3,20 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distance Measurement</title>
+    <title>Motion Detection</title>
 </head>
 <body>
-    <h1>Distance Measurement</h1>
+    <h1>Motion Detection</h1>
     <video id="video" width="640" height="480" autoplay></video>
-    <p id="distance">Distance: </p>
+    <p id="motionStatus">Motion Status: Waiting for motion...</p>
 
     <script>
-        // Access the video element
         const video = document.getElementById('video');
-        const distanceDisplay = document.getElementById('distance');
-
-        // Dimensions of the object to measure (in pixels)
-        const objectWidth = 100; // Width of the object in pixels
+        const motionStatus = document.getElementById('motionStatus');
+        let motionDetected = false;
 
         // Function to capture image from video stream
         function captureImage() {
@@ -25,48 +22,59 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            return canvas;
+            return context.getImageData(0, 0, canvas.width, canvas.height).data;
         }
 
-        // Function to calculate distance based on object size
-        function calculateDistance() {
-            // Capture an image
-            const image = captureImage();
+        // Function to detect motion in the captured image data
+        function detectMotion(imageData) {
+            // Compare current image data with previous image data to detect changes
+            if (previousImageData) {
+                for (let i = 0; i < imageData.length; i += 4) {
+                    // Calculate the difference between pixel values
+                    const deltaR = Math.abs(imageData[i] - previousImageData[i]);
+                    const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
+                    const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
 
-            // Calculate the width of the object in the image
-            const objectInImageWidth = objectWidth / image.width;
-
-            // Calculate the distance based on the width of the object in the image
-            // Assume a known constant factor (e.g., 500px represents 1 meter)
-            const knownObjectWidth = 500; // Width of the object in the real world (in pixels)
-            const knownDistance = 1000; // Known distance to the object (in centimeters)
-            const focalLength = knownObjectWidth * knownDistance / objectInImageWidth;
-
-            // Calculate the actual distance using the focal length
-            // In this example, we'll assume the focal length is constant
-            // and calculate the distance based on the apparent size of the object
-            const distance = (knownObjectWidth * knownDistance) / (objectInImageWidth * focalLength);
-
-            return distance; // Return the calculated distance
+                    // If the difference exceeds a threshold, consider it as motion
+                    if (deltaR + deltaG + deltaB > 30) {
+                        motionDetected = true;
+                        return;
+                    }
+                }
+            }
+            motionDetected = false;
         }
 
-        // Function to update distance display
-        function updateDistance() {
-            const distance = calculateDistance();
-            distanceDisplay.textContent = `Distance: ${distance.toFixed(2)} cm`; // Display distance
+        // Function to update motion status display
+        function updateMotionStatus() {
+            if (motionDetected) {
+                motionStatus.textContent = 'Motion detected!';
+            } else {
+                motionStatus.textContent = 'No motion detected';
+            }
+        }
+
+        // Variables to store previous image data
+        let previousImageData = null;
+
+        // Function to update motion detection and status
+        function updateMotionDetection() {
+            const imageData = captureImage();
+            detectMotion(imageData);
+            updateMotionStatus();
+            previousImageData = imageData;
         }
 
         // Access the camera stream
         navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
             .then(function(stream) {
                 video.srcObject = stream;
-                // Update distance periodically (every 2 seconds)
-                setInterval(updateDistance, 2000);
+                // Update motion detection and status periodically (every 200 milliseconds)
+                setInterval(updateMotionDetection, 200);
             })
             .catch(function(err) {
                 console.error('Error accessing the camera: ', err);
             });
-
     </script>
 </body>
 </html>
