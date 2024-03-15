@@ -15,14 +15,8 @@
         const video = document.getElementById('video');
         const distanceDisplay = document.getElementById('distance');
 
-        // Access the camera stream
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(function(stream) {
-                video.srcObject = stream;
-            })
-            .catch(function(err) {
-                console.error('Error accessing the camera: ', err);
-            });
+        // Dimensions of the object to measure (in pixels)
+        const objectWidth = 100; // Width of the object in pixels
 
         // Function to capture image from video stream
         function captureImage() {
@@ -34,21 +28,45 @@
             return canvas;
         }
 
-        // Function to calculate distance (dummy implementation)
+        // Function to calculate distance based on object size
         function calculateDistance() {
-            // Dummy implementation, replace this with your actual distance calculation logic
-            return Math.random() * 100; // Random distance for demonstration
+            // Capture an image
+            const image = captureImage();
+
+            // Calculate the width of the object in the image
+            const objectInImageWidth = objectWidth / image.width;
+
+            // Calculate the distance based on the width of the object in the image
+            // Assume a known constant factor (e.g., 500px represents 1 meter)
+            const knownObjectWidth = 500; // Width of the object in the real world (in pixels)
+            const knownDistance = 1000; // Known distance to the object (in centimeters)
+            const focalLength = knownObjectWidth * knownDistance / objectInImageWidth;
+
+            // Calculate the actual distance using the focal length
+            // In this example, we'll assume the focal length is constant
+            // and calculate the distance based on the apparent size of the object
+            const distance = (knownObjectWidth * knownDistance) / (objectInImageWidth * focalLength);
+
+            return distance; // Return the calculated distance
         }
 
         // Function to update distance display
         function updateDistance() {
-            const image = captureImage();
             const distance = calculateDistance();
-            distanceDisplay.textContent = `Distance: ${distance.toFixed(2)} units`; // Display distance
+            distanceDisplay.textContent = `Distance: ${distance.toFixed(2)} cm`; // Display distance
         }
 
-        // Update distance periodically (every 2 seconds)
-        setInterval(updateDistance, 2000);
+        // Access the camera stream
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                // Update distance periodically (every 2 seconds)
+                setInterval(updateDistance, 2000);
+            })
+            .catch(function(err) {
+                console.error('Error accessing the camera: ', err);
+            });
+
     </script>
 </body>
 </html>
