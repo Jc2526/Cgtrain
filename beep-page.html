@@ -56,10 +56,7 @@
     </div>
 
     <!-- Audio file for motion detection -->
-    <audio id="motionSound">
-        <source src="motion_detected.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
+    <audio id="motionSound" src="motion_detected.mp3" preload="auto"></audio>
 
     <script>
         const video = document.getElementById('video');
@@ -72,7 +69,7 @@
             // Your motion detection logic here
         }
 
-        // Function to update motion status display and play sound
+        // Function to update motion status display
         function updateMotionStatus() {
             if (motionDetected) {
                 motionStatus.textContent = 'Motion detected!';
@@ -84,13 +81,7 @@
 
         // Function to play motion detection sound
         function playMotionSound() {
-            // Check if audio playback is supported and user gesture is required
-            if (motionSound.paused && (motionSound.currentTime == 0 || motionSound.currentTime >= motionSound.duration)) {
-                motionSound.play();
-            } else {
-                // Reset audio playback to allow for repeated play
-                motionSound.currentTime = 0;
-            }
+            motionSound.play();
         }
 
         // Variables to store previous image data
@@ -125,12 +116,6 @@
 
         // Start the camera when the document is loaded
         document.addEventListener('DOMContentLoaded', startCamera);
-
-        // Simulate motion detection when the user clicks anywhere on the document
-        document.addEventListener('click', function() {
-            motionDetected = true;
-            updateMotionStatus();
-        });
     </script>
 </body>
 </html>
