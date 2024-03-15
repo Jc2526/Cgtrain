@@ -55,9 +55,16 @@
         <p id="motionStatus">Motion Status: Waiting for motion...</p>
     </div>
 
+    <!-- Audio file for motion detection -->
+    <audio id="motionSound">
+        <source src="motion_detected.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
     <script>
         const video = document.getElementById('video');
         const motionStatus = document.getElementById('motionStatus');
+        const motionSound = document.getElementById('motionSound');
         let motionDetected = false;
 
         // Function to detect motion in the captured image data
@@ -69,8 +76,20 @@
         function updateMotionStatus() {
             if (motionDetected) {
                 motionStatus.textContent = 'Motion detected!';
+                playMotionSound();
             } else {
                 motionStatus.textContent = 'Waiting for motion...';
+            }
+        }
+
+        // Function to play motion detection sound
+        function playMotionSound() {
+            // Check if audio playback is supported and user gesture is required
+            if (motionSound.paused && (motionSound.currentTime == 0 || motionSound.currentTime >= motionSound.duration)) {
+                motionSound.play();
+            } else {
+                // Reset audio playback to allow for repeated play
+                motionSound.currentTime = 0;
             }
         }
 
