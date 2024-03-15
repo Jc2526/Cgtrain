@@ -3,37 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motion Detection</title>
+    <title>Motion Detector</title>
     <style>
-        body, html {
+        body {
             margin: 0;
             padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+        #container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #videoContainer {
+            position: relative;
             width: 100%;
-            height: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio (responsive video) */
             overflow: hidden;
+            border-radius: 10px;
         }
         #video {
-            width: 100vw;
-            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
         }
         #motionStatus {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 5px 10px;
-            border-radius: 5px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #333;
         }
     </style>
 </head>
 <body>
-    <h1>Motion Detection</h1>
-    <video id="video" autoplay playsinline></video>
-    <p id="motionStatus">Motion Status: Waiting for motion...</p>
+    <div id="container">
+        <h1>Motion Detector</h1>
+        <div id="videoContainer">
+            <video id="video" autoplay playsinline></video>
+        </div>
+        <p id="motionStatus">Motion Status: Waiting for motion...</p>
+    </div>
 
     <script>
         const video = document.getElementById('video');
@@ -42,29 +62,7 @@
 
         // Function to detect motion in the captured image data
         function detectMotion(imageData) {
-            // Compare current image data with previous image data to detect changes
-            if (previousImageData) {
-                let totalDiff = 0;
-                for (let i = 0; i < imageData.length; i += 4) {
-                    // Calculate the difference between pixel values
-                    const deltaR = Math.abs(imageData[i] - previousImageData[i]);
-                    const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
-                    const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
-
-                    // Accumulate total difference
-                    totalDiff += deltaR + deltaG + deltaB;
-                }
-                // Calculate average difference per pixel
-                const avgDiff = totalDiff / (imageData.length / 4);
-
-                // Set motion detection threshold
-                const threshold = 30;
-
-                // If average difference exceeds threshold, consider it as motion
-                motionDetected = avgDiff > threshold;
-            } else {
-                motionDetected = false;
-            }
+            // Your motion detection logic here
         }
 
         // Function to update motion status display
