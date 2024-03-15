@@ -7,23 +7,13 @@
 </head>
 <body>
     <h1>Motion Detection</h1>
-    <video id="video" width="640" height="480" autoplay></video>
+    <video id="video" width="640" height="480" autoplay playsinline></video>
     <p id="motionStatus">Motion Status: Waiting for motion...</p>
 
     <script>
         const video = document.getElementById('video');
         const motionStatus = document.getElementById('motionStatus');
         let motionDetected = false;
-
-        // Function to capture image from video stream
-        function captureImage() {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            return context.getImageData(0, 0, canvas.width, canvas.height).data;
-        }
 
         // Function to detect motion in the captured image data
         function detectMotion(imageData) {
@@ -66,22 +56,33 @@
 
         // Function to update motion detection and status
         function updateMotionDetection() {
-            const imageData = captureImage();
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
+
             detectMotion(imageData);
             updateMotionStatus();
             previousImageData = imageData;
         }
 
         // Access the camera stream
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(function(stream) {
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 video.srcObject = stream;
+                video.play();
                 // Update motion detection and status periodically (every 200 milliseconds)
                 setInterval(updateMotionDetection, 200);
-            })
-            .catch(function(err) {
-                console.error('Error accessing the camera: ', err);
-            });
+            } catch (error) {
+                console.error('Error accessing the camera: ', error);
+            }
+        }
+
+        // Start the camera when the document is loaded
+        document.addEventListener('DOMContentLoaded', startCamera);
     </script>
 </body>
 </html>
