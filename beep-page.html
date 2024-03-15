@@ -44,17 +44,6 @@
             font-size: 18px;
             color: #333;
         }
-        #acknowledgeButton {
-            display: none;
-            margin: 20px auto;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
@@ -64,7 +53,6 @@
             <video id="video" autoplay playsinline></video>
         </div>
         <p id="motionStatus">Motion Status: Waiting for motion...</p>
-        <button id="acknowledgeButton" onclick="acknowledgeMotion()">Acknowledge</button>
     </div>
 
     <!-- Audio file for motion detection -->
@@ -75,16 +63,35 @@
     <script>
         const video = document.getElementById('video');
         const motionStatus = document.getElementById('motionStatus');
-        const acknowledgeButton = document.getElementById('acknowledgeButton');
         const motionSound = document.getElementById('motionSound');
         const beepSound = document.getElementById('beepSound');
         let motionDetected = false;
 
         // Function to detect motion in the captured image data
         function detectMotion(imageData) {
-            // Your motion detection logic here
-            // For demonstration purposes, let's assume motion is detected randomly
-            motionDetected = Math.random() < 0.5; // 50% chance of motion detection
+            // Compare current image data with previous image data to detect changes
+            if (previousImageData) {
+                let totalDiff = 0;
+                for (let i = 0; i < imageData.length; i += 4) {
+                    // Calculate the difference between pixel values
+                    const deltaR = Math.abs(imageData[i] - previousImageData[i]);
+                    const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
+                    const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
+
+                    // Accumulate total difference
+                    totalDiff += deltaR + deltaG + deltaB;
+                }
+                // Calculate average difference per pixel
+                const avgDiff = totalDiff / (imageData.length / 4);
+
+                // Set motion detection threshold
+                const threshold = 30;
+
+                // If average difference exceeds threshold, consider it as motion
+                motionDetected = avgDiff > threshold;
+            } else {
+                motionDetected = false;
+            }
         }
 
         // Function to update motion status display
@@ -92,10 +99,9 @@
             if (motionDetected) {
                 motionStatus.textContent = 'Motion detected!';
                 playMotionSound();
-                acknowledgeButton.style.display = 'block'; // Show acknowledge button
+                playBeepSound(); // Play beep sound
             } else {
                 motionStatus.textContent = 'Waiting for motion...';
-                acknowledgeButton.style.display = 'none'; // Hide acknowledge button
             }
         }
 
@@ -107,12 +113,6 @@
         // Function to play beep sound
         function playBeepSound() {
             beepSound.play();
-        }
-
-        // Function to acknowledge motion detection
-        function acknowledgeMotion() {
-            acknowledgeButton.style.display = 'none'; // Hide acknowledge button
-            // Additional actions to perform upon acknowledging motion (if needed)
         }
 
         // Variables to store previous image data
@@ -129,6 +129,7 @@
 
             detectMotion(imageData);
             updateMotionStatus();
+            previousImageData = imageData;
         }
 
         // Access the camera stream
