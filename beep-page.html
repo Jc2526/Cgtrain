@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Full Body Tracking</title>
+    <title>Head Tracking</title>
     <style>
         body {
             margin: 0;
@@ -28,41 +28,56 @@
     <canvas id="canvas"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script>
         // Get video element
         const video = document.getElementById('video');
 
-        // Load posenet model
-        async function runPoseNet() {
-            const net = await posenet.load();
+        // Load face-landmarks detection model
+        async function runFaceLandmarksDetection() {
+            const model = await faceLandmarksDetection.load(
+                faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+                { maxFaces: 1 }
+            );
 
             // Get camera stream using WebRTC
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
             video.srcObject = stream;
 
-            // Detect pose in real-time
+            // Detect face landmarks in real-time
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
 
-            async function detectPose() {
-                const pose = await net.estimateSinglePose(video, {
-                    flipHorizontal: false
+            async function detectFaceLandmarks() {
+                const predictions = await model.estimateFaces({
+                    input: video
                 });
 
-                // Render pose on canvas
+                // Render face landmarks on canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                posenet.drawKeypoints(pose.keypoints, 0.5, ctx);
-                posenet.drawSkeleton(pose.keypoints, 0.5, ctx);
+                if (predictions.length > 0) {
+                    const keypoints = predictions[0].scaledMesh;
+                    drawKeypoints(ctx, keypoints);
+                }
 
-                requestAnimationFrame(detectPose);
+                requestAnimationFrame(detectFaceLandmarks);
             }
 
-            detectPose();
+            detectFaceLandmarks();
         }
 
-        runPoseNet();
+        function drawKeypoints(ctx, keypoints) {
+            for (let i = 0; i < keypoints.length; i++) {
+                const [x, y, z] = keypoints[i];
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = 'red';
+                ctx.fill();
+            }
+        }
+
+        runFaceLandmarksDetection();
     </script>
 </body>
 </html>
