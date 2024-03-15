@@ -44,6 +44,12 @@
             font-size: 18px;
             color: #333;
         }
+        #audioControl {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -53,10 +59,11 @@
             <video id="video" autoplay playsinline></video>
         </div>
         <p id="motionStatus">Motion Status: Waiting for motion...</p>
+        <img id="audioControl" src="audio_off.png" alt="Audio Control">
     </div>
 
     <!-- Audio file for motion detection -->
-    <audio id="motionSound" src="motion_detected.mp3" preload="auto"></audio>
+    <audio id="motionSound" src="motion_detected.mp3" preload="auto" loop></audio>
     <!-- Audio file for beep sound -->
     <audio id="beepSound" src="beep.mp3" preload="auto"></audio>
 
@@ -65,6 +72,7 @@
         const motionStatus = document.getElementById('motionStatus');
         const motionSound = document.getElementById('motionSound');
         const beepSound = document.getElementById('beepSound');
+        const audioControl = document.getElementById('audioControl');
         let motionDetected = false;
 
         // Function to detect motion in the captured image data
@@ -98,21 +106,29 @@
         function updateMotionStatus() {
             if (motionDetected) {
                 motionStatus.textContent = 'Motion detected!';
-                playMotionSound();
+                raiseVolume(); // Raise volume when motion detected
                 playBeepSound(); // Play beep sound
             } else {
                 motionStatus.textContent = 'Waiting for motion...';
+                lowerVolume(); // Lower volume when motion not detected
             }
-        }
-
-        // Function to play motion detection sound
-        function playMotionSound() {
-            motionSound.play();
         }
 
         // Function to play beep sound
         function playBeepSound() {
             beepSound.play();
+        }
+
+        // Function to raise volume
+        function raiseVolume() {
+            motionSound.volume = 1.0; // Max volume
+            audioControl.src = "audio_on.png"; // Change icon to indicate audio is on
+        }
+
+        // Function to lower volume
+        function lowerVolume() {
+            motionSound.volume = 0.1; // Lower volume
+            audioControl.src = "audio_off.png"; // Change icon to indicate audio is off
         }
 
         // Variables to store previous image data
@@ -141,10 +157,15 @@
                 // Update motion detection and status periodically (every 200 milliseconds)
                 setInterval(updateMotionDetection, 200);
 
-                // Play audio when user interacts with the page
-                document.addEventListener('click', () => {
-                    motionSound.play();
-                    beepSound.play();
+                // Toggle audio control
+                audioControl.addEventListener('click', () => {
+                    if (motionSound.paused) {
+                        motionSound.play();
+                        raiseVolume(); // Raise volume if audio is turned on
+                    } else {
+                        motionSound.pause();
+                        lowerVolume(); // Lower volume if audio is turned off
+                    }
                 });
             } catch (error) {
                 console.error('Error accessing the camera: ', error);
