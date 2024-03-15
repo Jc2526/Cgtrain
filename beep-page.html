@@ -4,58 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Motion Detection</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+        #motionStatus {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
     <h1>Motion Detection</h1>
-    <video id="video" width="640" height="480" autoplay playsinline></video>
-    <p id="motionStatus">Waiting for motion...</p>
-
-    <!-- Beep sound -->
-    <audio id="beep" preload="auto">
-        <source src="beep.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
+    <video id="video" autoplay playsinline></video>
+    <p id="motionStatus">Motion Status: Waiting for motion...</p>
 
     <script>
         const video = document.getElementById('video');
         const motionStatus = document.getElementById('motionStatus');
-        const beepSound = document.getElementById('beep');
         let motionDetected = false;
-        let audioPlaying = false;
 
         // Function to detect motion in the captured image data
         function detectMotion(imageData) {
-            let totalDiff = 0;
-            for (let i = 0; i < imageData.length; i += 4) {
-                // Calculate the difference between pixel values
-                const deltaR = Math.abs(imageData[i] - previousImageData[i]);
-                const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
-                const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
+            // Compare current image data with previous image data to detect changes
+            if (previousImageData) {
+                let totalDiff = 0;
+                for (let i = 0; i < imageData.length; i += 4) {
+                    // Calculate the difference between pixel values
+                    const deltaR = Math.abs(imageData[i] - previousImageData[i]);
+                    const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
+                    const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
 
-                // Accumulate total difference
-                totalDiff += deltaR + deltaG + deltaB;
+                    // Accumulate total difference
+                    totalDiff += deltaR + deltaG + deltaB;
+                }
+                // Calculate average difference per pixel
+                const avgDiff = totalDiff / (imageData.length / 4);
+
+                // Set motion detection threshold
+                const threshold = 30;
+
+                // If average difference exceeds threshold, consider it as motion
+                motionDetected = avgDiff > threshold;
+            } else {
+                motionDetected = false;
             }
-            // Calculate average difference per pixel
-            const avgDiff = totalDiff / (imageData.length / 4);
-
-            // Set motion detection threshold
-            const threshold = 30;
-
-            // If average difference exceeds threshold, consider it as motion
-            motionDetected = avgDiff > threshold;
         }
 
         // Function to update motion status display
         function updateMotionStatus() {
             if (motionDetected) {
-                motionStatus.textContent = 'Motion Detected!';
-                if (!audioPlaying) {
-                    beepSound.play();
-                    audioPlaying = true;
-                }
+                motionStatus.textContent = 'Motion detected!';
             } else {
                 motionStatus.textContent = 'Waiting for motion...';
-                audioPlaying = false;
             }
         }
 
