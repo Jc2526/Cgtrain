@@ -42,33 +42,10 @@
     canvas.height = height;
 
     // Load hand tracking
-    tracking.track('#videoElement', new tracking.ColorTracker(['magenta']));
-
-    // Add a listener for the track event
-    tracking.ColorTracker.registerColor('magenta', function (r, g, b) {
-        if (r > 200 && g < 100 && b > 200) {
-            return true;
-        }
-        return false;
-    });
-
-    tracking.track('#videoElement', new tracking.ColorTracker(['magenta']));
-
-    // Add listener for track event
-    tracking.track('#videoElement', new tracking.ColorTracker(['magenta']));
-    tracking.ColorTracker.registerColor('magenta', function (r, g, b) {
-        if (r > 200 && g < 100 && b > 200) {
-            return true;
-        }
-        return false;
-    });
-
-    const tracker = new tracking.ObjectTracker(['hand']);
+    const tracker = new tracking.ObjectTracker('hand');
     tracker.setInitialScale(4);
     tracker.setStepSize(2);
     tracker.setEdgesDensity(0.1);
-
-    tracking.track('#videoElement', tracker, { camera: true });
 
     // Add listener for track event
     tracker.on('track', function(event) {
@@ -89,6 +66,9 @@
         .then(function (stream) {
             video.srcObject = stream;
             video.play();
+
+            // Start tracking
+            tracking.track('#videoElement', tracker, { camera: true });
         })
         .catch(function (err) {
             console.log('Error: ' + err);
