@@ -29,20 +29,27 @@
         function detectMotion(imageData) {
             // Compare current image data with previous image data to detect changes
             if (previousImageData) {
+                let totalDiff = 0;
                 for (let i = 0; i < imageData.length; i += 4) {
                     // Calculate the difference between pixel values
                     const deltaR = Math.abs(imageData[i] - previousImageData[i]);
                     const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
                     const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
 
-                    // If the difference exceeds a threshold, consider it as motion
-                    if (deltaR + deltaG + deltaB > 30) {
-                        motionDetected = true;
-                        return;
-                    }
+                    // Accumulate total difference
+                    totalDiff += deltaR + deltaG + deltaB;
                 }
+                // Calculate average difference per pixel
+                const avgDiff = totalDiff / (imageData.length / 4);
+
+                // Set motion detection threshold
+                const threshold = 30;
+
+                // If average difference exceeds threshold, consider it as motion
+                motionDetected = avgDiff > threshold;
+            } else {
+                motionDetected = false;
             }
-            motionDetected = false;
         }
 
         // Function to update motion status display
@@ -50,7 +57,7 @@
             if (motionDetected) {
                 motionStatus.textContent = 'Motion detected!';
             } else {
-                motionStatus.textContent = 'No motion detected';
+                motionStatus.textContent = 'Waiting for motion...';
             }
         }
 
