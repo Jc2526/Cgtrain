@@ -69,32 +69,10 @@
 
         // Function to detect motion in the captured image data
         function detectMotion(imageData) {
-            // Compare current image data with previous image data to detect changes
-            if (previousImageData) {
-                let totalDiff = 0;
-                for (let i = 0; i < imageData.length; i += 4) {
-                    // Calculate the difference between pixel values
-                    const deltaR = Math.abs(imageData[i] - previousImageData[i]);
-                    const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
-                    const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
-
-                    // Accumulate total difference
-                    totalDiff += deltaR + deltaG + deltaB;
-                }
-                // Calculate average difference per pixel
-                const avgDiff = totalDiff / (imageData.length / 4);
-
-                // Set motion detection threshold
-                const threshold = 30;
-
-                // If average difference exceeds threshold, consider it as motion
-                motionDetected = avgDiff > threshold;
-            } else {
-                motionDetected = false;
-            }
+            // Your motion detection logic here
         }
 
-        // Function to update motion status display
+        // Function to update motion status display and play sound
         function updateMotionStatus() {
             if (motionDetected) {
                 motionStatus.textContent = 'Motion detected!';
@@ -147,6 +125,12 @@
 
         // Start the camera when the document is loaded
         document.addEventListener('DOMContentLoaded', startCamera);
+
+        // Simulate motion detection when the user clicks anywhere on the document
+        document.addEventListener('click', function() {
+            motionDetected = true;
+            updateMotionStatus();
+        });
     </script>
 </body>
 </html>
