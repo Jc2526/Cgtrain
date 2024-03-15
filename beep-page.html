@@ -51,12 +51,6 @@
             left: 10px;
             cursor: pointer;
         }
-        #motionBox {
-            position: absolute;
-            border: 2px solid red;
-            width: 50px; /* Adjust width as needed */
-            height: 50px; /* Adjust height as needed */
-        }
     </style>
 </head>
 <body>
@@ -64,7 +58,6 @@
         <h1>Motion Detector</h1>
         <div id="videoContainer">
             <video id="video" autoplay playsinline></video>
-            <div id="motionBox"></div>
         </div>
         <p id="motionStatus">Motion Status: Waiting for motion...</p>
         <img id="audioControl" src="audio_off.png" alt="Audio Control">
@@ -81,30 +74,33 @@
         const motionSound = document.getElementById('motionSound');
         const beepSound = document.getElementById('beepSound');
         const audioControl = document.getElementById('audioControl');
-        const motionBox = document.getElementById('motionBox');
         let motionDetected = false;
 
-        // Function to detect motion in the specified region
-        function detectMotionInRegion(imageData, x, y, width, height) {
-            let totalDiff = 0;
-            const pixelCount = width * height * 4; // 4 channels (RGBA) per pixel
-            for (let i = y; i < y + height; i++) {
-                for (let j = x; j < x + width; j++) {
-                    const pixelIndex = (i * imageData.width + j) * 4;
+        // Function to detect motion in the captured image data
+        function detectMotion(imageData) {
+            // Compare current image data with previous image data to detect changes
+            if (previousImageData) {
+                let totalDiff = 0;
+                for (let i = 0; i < imageData.length; i += 4) {
                     // Calculate the difference between pixel values
-                    const deltaR = Math.abs(imageData.data[pixelIndex] - previousImageData.data[pixelIndex]);
-                    const deltaG = Math.abs(imageData.data[pixelIndex + 1] - previousImageData.data[pixelIndex + 1]);
-                    const deltaB = Math.abs(imageData.data[pixelIndex + 2] - previousImageData.data[pixelIndex + 2]);
+                    const deltaR = Math.abs(imageData[i] - previousImageData[i]);
+                    const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
+                    const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
+
                     // Accumulate total difference
                     totalDiff += deltaR + deltaG + deltaB;
                 }
+                // Calculate average difference per pixel
+                const avgDiff = totalDiff / (imageData.length / 4);
+
+                // Set motion detection threshold
+                const threshold = 30;
+
+                // If average difference exceeds threshold, consider it as motion
+                motionDetected = avgDiff > threshold;
+            } else {
+                motionDetected = false;
             }
-            // Calculate average difference per pixel
-            const avgDiff = totalDiff / pixelCount;
-            // Set motion detection threshold
-            const threshold = 30;
-            // If average difference exceeds threshold, consider it as motion
-            return avgDiff > threshold;
         }
 
         // Function to update motion status display
@@ -146,22 +142,9 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
 
-            // Define the coordinates and dimensions of the motion detection region (box)
-            const motionBoxX = Math.floor(canvas.width / 2 - 25); // Center horizontally
-            const motionBoxY = Math.floor(canvas.height / 2 - 25); // Center vertically
-            const motionBoxWidth = 50; // Width of the box
-            const motionBoxHeight = 50; // Height of the box
-
-            detectMotionInRegion(imageData, motionBoxX, motionBoxY, motionBoxWidth, motionBoxHeight)
-                ? motionDetected = true
-                : motionDetected = false;
-
-            // Draw the motion detection box on the canvas
-            context.strokeStyle = 'red';
-            context.strokeRect(motionBoxX, motionBoxY, motionBoxWidth, motionBoxHeight);
-
+            detectMotion(imageData);
             updateMotionStatus();
             previousImageData = imageData;
         }
