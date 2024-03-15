@@ -4,28 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Motion Detection</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000; /* Set initial background color */
-            color: #fff; /* Set initial text color */
-        }
-        h1, p {
-            margin: 20px;
-        }
-    </style>
 </head>
 <body>
     <h1>Motion Detection</h1>
-    <video id="video" width="100%" height="100%" autoplay playsinline></video>
+    <video id="video" width="640" height="480" autoplay playsinline></video>
+    <p id="motionStatus">Waiting for motion...</p>
+
+    <!-- Beep sound -->
+    <audio id="beep" preload="auto">
+        <source src="beep.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
 
     <script>
         const video = document.getElementById('video');
-        const body = document.body;
+        const motionStatus = document.getElementById('motionStatus');
+        const beepSound = document.getElementById('beep');
         let motionDetected = false;
+        let audioPlaying = false;
 
         // Function to detect motion in the captured image data
         function detectMotion(imageData) {
@@ -49,21 +45,24 @@
             motionDetected = avgDiff > threshold;
         }
 
-        // Function to update screen color based on motion status
-        function updateScreenColor() {
+        // Function to update motion status display
+        function updateMotionStatus() {
             if (motionDetected) {
-                body.style.backgroundColor = '#fff'; // Change background to white
-                body.style.color = '#000'; // Change text color to black
+                motionStatus.textContent = 'Motion Detected!';
+                if (!audioPlaying) {
+                    beepSound.play();
+                    audioPlaying = true;
+                }
             } else {
-                body.style.backgroundColor = '#000'; // Change background to black
-                body.style.color = '#fff'; // Change text color to white
+                motionStatus.textContent = 'Waiting for motion...';
+                audioPlaying = false;
             }
         }
 
         // Variables to store previous image data
         let previousImageData = null;
 
-        // Function to update motion detection and screen color
+        // Function to update motion detection and status
         function updateMotionDetection() {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
@@ -73,7 +72,7 @@
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
 
             detectMotion(imageData);
-            updateScreenColor();
+            updateMotionStatus();
             previousImageData = imageData;
         }
 
@@ -83,7 +82,7 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 video.srcObject = stream;
                 video.play();
-                // Update motion detection and screen color periodically (every 200 milliseconds)
+                // Update motion detection and status periodically (every 200 milliseconds)
                 setInterval(updateMotionDetection, 200);
             } catch (error) {
                 console.error('Error accessing the camera: ', error);
