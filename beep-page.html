@@ -1,49 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distance Measurement</title>
-    <style>
-        /* Add your CSS styles here */
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hand Tracking Demo</title>
+<style>
+    #videoContainer {
+        position: relative;
+        width: 640px;
+        margin: 0 auto;
+    }
+    #videoElement {
+        width: 100%;
+        border: 1px solid black;
+    }
+    #canvasOverlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+</style>
 </head>
 <body>
-    <h1>Distance Measurement</h1>
-    <div>
-        <button onclick="measureDistance()">Measure Distance</button>
-    </div>
-    <p id="distanceResult"></p>
+<div id="videoContainer">
+    <video id="videoElement" autoplay playsinline></video>
+    <canvas id="canvasOverlay"></canvas>
+</div>
 
-    <script>
-        async function measureDistance() {
-            const imageSrc = 'path_to_your_image.jpg'; // Path to your static image
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat.gui/0.7.7/dat.gui.min.js"></script>
+<script>
+    // Get video element and canvas overlay
+    const video = document.getElementById('videoElement');
+    const canvas = document.getElementById('canvasOverlay');
+    const context = canvas.getContext('2d');
 
-            const image = new Image();
-            image.src = imageSrc;
+    // Set up dimensions for the canvas
+    const width = 640;
+    const height = 480;
+    canvas.width = width;
+    canvas.height = height;
 
-            image.onload = function() {
-                const distance = estimateDistance(image);
-                displayResult(distance);
-            };
+    // Load hand tracking
+    tracking.track('#videoElement', new tracking.ColorTracker(['magenta']));
+
+    // Add a listener for the track event
+    tracking.ColorTracker.registerColor('magenta', function (r, g, b) {
+        if (r > 200 && g < 100 && b > 200) {
+            return true;
         }
+        return false;
+    });
 
-        function estimateDistance(image) {
-            // Here you would use image processing techniques
-            // to analyze the image and estimate the distance of the object.
-            // This could involve edge detection, object recognition, or other computer vision algorithms.
-            // For simplicity, let's assume a static value for demonstration.
+    tracking.track('#videoElement', new tracking.ColorTracker(['magenta']));
 
-            // For demonstration purposes, let's assume that the distance is 1 pixel if the image width is less than 100 pixels,
-            // otherwise, assume the distance is 500 pixels.
-            const distance = image.width < 100 ? 1 : 500;
-            return distance;
+    // Add listener for track event
+    tracking.track('#videoElement', new tracking.ColorTracker(['magenta']));
+    tracking.ColorTracker.registerColor('magenta', function (r, g, b) {
+        if (r > 200 && g < 100 && b > 200) {
+            return true;
         }
+        return false;
+    });
 
-        function displayResult(distance) {
-            const resultElement = document.getElementById('distanceResult');
-            resultElement.textContent = `Estimated Distance: ${distance} pixels`;
-        }
-    </script>
+    const tracker = new tracking.ObjectTracker(['hand']);
+    tracker.setInitialScale(4);
+    tracker.setStepSize(2);
+    tracker.setEdgesDensity(0.1);
+
+    tracking.track('#videoElement', tracker, { camera: true });
+
+    // Add listener for track event
+    tracker.on('track', function(event) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        event.data.forEach(function(rect) {
+            context.strokeStyle = '#ff0000';
+            context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+            context.font = '11px Helvetica';
+            context.fillStyle = "#fff";
+            context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 5, rect.y + 11);
+            context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
+        });
+    });
+
+    // Start video stream
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function (stream) {
+            video.srcObject = stream;
+            video.play();
+        })
+        .catch(function (err) {
+            console.log('Error: ' + err);
+        });
+</script>
 </body>
 </html>
