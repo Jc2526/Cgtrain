@@ -1,78 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hand Tracking Demo</title>
-<style>
-    #videoContainer {
-        position: relative;
-        width: 640px;
-        margin: 0 auto;
-    }
-    #videoElement {
-        width: 100%;
-        border: 1px solid black;
-    }
-    #canvasOverlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distance Measurement</title>
 </head>
 <body>
-<div id="videoContainer">
-    <video id="videoElement" autoplay playsinline></video>
-    <canvas id="canvasOverlay"></canvas>
-</div>
+    <h1>Distance Measurement</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <p id="distance">Distance: </p>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dat.gui/0.7.7/dat.gui.min.js"></script>
-<script>
-    // Get video element and canvas overlay
-    const video = document.getElementById('videoElement');
-    const canvas = document.getElementById('canvasOverlay');
-    const context = canvas.getContext('2d');
+    <script>
+        // Access the video element
+        const video = document.getElementById('video');
+        const distanceDisplay = document.getElementById('distance');
 
-    // Set up dimensions for the canvas
-    const width = 640;
-    const height = 480;
-    canvas.width = width;
-    canvas.height = height;
+        // Access the camera stream
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(function(stream) {
+                video.srcObject = stream;
+            })
+            .catch(function(err) {
+                console.error('Error accessing the camera: ', err);
+            });
 
-    // Load hand tracking
-    const tracker = new tracking.ObjectTracker('hand');
-    tracker.setInitialScale(4);
-    tracker.setStepSize(2);
-    tracker.setEdgesDensity(0.1);
+        // Function to capture image from video stream
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas;
+        }
 
-    // Add listener for track event
-    tracker.on('track', function(event) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
+        // Function to calculate distance (dummy implementation)
+        function calculateDistance() {
+            // Dummy implementation, replace this with your actual distance calculation logic
+            return Math.random() * 100; // Random distance for demonstration
+        }
 
-        event.data.forEach(function(rect) {
-            context.strokeStyle = '#ff0000';
-            context.strokeRect(rect.x, rect.y, rect.width, rect.height);
-            context.font = '11px Helvetica';
-            context.fillStyle = "#fff";
-            context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 5, rect.y + 11);
-            context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
-        });
-    });
+        // Function to update distance display
+        function updateDistance() {
+            const image = captureImage();
+            const distance = calculateDistance();
+            distanceDisplay.textContent = `Distance: ${distance.toFixed(2)} units`; // Display distance
+        }
 
-    // Start video stream
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(function (stream) {
-            video.srcObject = stream;
-            video.play();
-
-            // Start tracking
-            tracking.track('#videoElement', tracker, { camera: true });
-        })
-        .catch(function (err) {
-            console.log('Error: ' + err);
-        });
-</script>
+        // Update distance periodically (every 2 seconds)
+        setInterval(updateDistance, 2000);
+    </script>
 </body>
 </html>
