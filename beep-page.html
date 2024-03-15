@@ -4,10 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Motion Detection</title>
+    <style>
+        #videoContainer {
+            position: relative;
+            width: 640px;
+            height: 480px;
+        }
+        #roi {
+            position: absolute;
+            border: 2px solid red;
+            width: 100px;
+            height: 100px;
+            top: 50px;
+            left: 50px;
+        }
+    </style>
 </head>
 <body>
     <h1>Motion Detection</h1>
-    <video id="video" width="640" height="480" autoplay playsinline></video>
+    <div id="videoContainer">
+        <video id="video" width="640" height="480" autoplay playsinline></video>
+        <div id="roi"></div>
+    </div>
     <p id="motionStatus">Motion Status: Waiting for motion...</p>
 
     <!-- Beep sound -->
@@ -20,25 +38,33 @@
         const video = document.getElementById('video');
         const motionStatus = document.getElementById('motionStatus');
         const beepSound = document.getElementById('beep');
+        const roi = document.getElementById('roi');
         let motionDetected = false;
         let audioPlaying = false;
 
-        // Function to detect motion in the captured image data
-        function detectMotion(imageData) {
-            // Compare current image data with previous image data to detect changes
-            if (previousImageData) {
+        // Function to detect motion in the ROI
+        function detectMotionInROI(imageData) {
+            const roiCanvas = document.createElement('canvas');
+            const roiContext = roiCanvas.getContext('2d');
+            roiCanvas.width = roi.clientWidth;
+            roiCanvas.height = roi.clientHeight;
+            roiContext.drawImage(video, roi.offsetLeft, roi.offsetTop, roi.clientWidth, roi.clientHeight, 0, 0, roi.clientWidth, roi.clientHeight);
+            const roiImageData = roiContext.getImageData(0, 0, roi.clientWidth, roi.clientHeight).data;
+
+            // Compare current ROI image data with previous ROI image data to detect changes
+            if (previousROIImageData) {
                 let totalDiff = 0;
-                for (let i = 0; i < imageData.length; i += 4) {
+                for (let i = 0; i < roiImageData.length; i += 4) {
                     // Calculate the difference between pixel values
-                    const deltaR = Math.abs(imageData[i] - previousImageData[i]);
-                    const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
-                    const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
+                    const deltaR = Math.abs(roiImageData[i] - previousROIImageData[i]);
+                    const deltaG = Math.abs(roiImageData[i + 1] - previousROIImageData[i + 1]);
+                    const deltaB = Math.abs(roiImageData[i + 2] - previousROIImageData[i + 2]);
 
                     // Accumulate total difference
                     totalDiff += deltaR + deltaG + deltaB;
                 }
                 // Calculate average difference per pixel
-                const avgDiff = totalDiff / (imageData.length / 4);
+                const avgDiff = totalDiff / (roiImageData.length / 4);
 
                 // Set motion detection threshold
                 const threshold = 30;
@@ -64,8 +90,8 @@
             }
         }
 
-        // Variables to store previous image data
-        let previousImageData = null;
+        // Variables to store previous ROI image data
+        let previousROIImageData = null;
 
         // Function to update motion detection and status
         function updateMotionDetection() {
@@ -76,9 +102,9 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
 
-            detectMotion(imageData);
+            detectMotionInROI(imageData);
             updateMotionStatus();
-            previousImageData = imageData;
+            previousROIImageData = imageData;
         }
 
         // Access the camera stream
