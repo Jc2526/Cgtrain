@@ -15,8 +15,8 @@
             background-color: #f0f0f0;
         }
         #video {
+            border: 2px solid #333;
             transform: scaleX(-1); /* Flip video horizontally */
-            display: none; /* Hide video element */
         }
         #canvas {
             border: 2px solid #333;
@@ -24,11 +24,12 @@
     </style>
 </head>
 <body>
-    <video id="video" autoplay></video>
+    <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script>
         // Get video element
         const video = document.getElementById('video');
@@ -37,17 +38,9 @@
         async function runPoseNet() {
             const net = await posenet.load();
 
-            // Get camera stream
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function (stream) {
-                        video.srcObject = stream;
-                        video.play();
-                    })
-                    .catch(function (error) {
-                        console.error('Could not access camera: ', error);
-                    });
-            }
+            // Get camera stream using WebRTC
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.srcObject = stream;
 
             // Detect pose in real-time
             const canvas = document.getElementById('canvas');
