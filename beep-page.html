@@ -1,193 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motion Detector</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f2f2f2;
-        }
-        #container {
-            max-width: 400px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            position: relative; /* Ensure the container is positioned relative for absolute positioning of the icon */
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        #videoContainer {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio (responsive video) */
-            overflow: hidden;
-            border-radius: 10px;
-            background: #000; /* Background color for the video feed */
-        }
-        #video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        #motionStatus {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 18px;
-            color: #333;
-        }
-        #audioControl {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            cursor: pointer;
-        }
-        #overlay {
-            position: absolute;
-            top: 20%; /* Adjust the position of the square vertically */
-            left: 20%; /* Adjust the position of the square horizontally */
-            width: 60%; /* Adjust the width of the square */
-            height: 60%; /* Adjust the height of the square */
-            border: 2px solid red; /* Border style of the square */
-            pointer-events: none; /* Ensure clicks pass through the overlay */
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motion Detector</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+    }
+</style>
 </head>
 <body>
-    <div id="container">
-        <h1>Motion Detector</h1>
-        <div id="videoContainer">
-            <video id="video" autoplay playsinline></video>
-            <div id="overlay"></div> <!-- Add overlay div for the square -->
-        </div>
-        <p id="motionStatus">Motion Status: Waiting for motion...</p>
-        <img id="audioControl" src="audio_off.png" alt="Audio Control">
-    </div>
+<h1>Motion Detector</h1>
+<div id="status">Waiting for motion...</div>
+<script>
+    // Variables to store last known orientation
+    var lastX = null;
+    var lastY = null;
+    var lastZ = null;
 
-    <!-- Audio file for motion detection -->
-    <audio id="motionSound" src="motion_detected.mp3" preload="auto" loop></audio>
-    <!-- Audio file for beep sound -->
-    <audio id="beepSound" src="beep.mp3" preload="auto"></audio>
+    // Audio context
+    var audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    <script>
-        const video = document.getElementById('video');
-        const motionStatus = document.getElementById('motionStatus');
-        const motionSound = document.getElementById('motionSound');
-        const beepSound = document.getElementById('beepSound');
-        const audioControl = document.getElementById('audioControl');
-        let motionDetected = false;
+    // Function to play beep sound
+    function playBeep() {
+        var oscillator = audioContext.createOscillator();
+        oscillator.connect(audioContext.destination);
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+        oscillator.start();
+        setTimeout(function() {
+            oscillator.stop();
+        }, 500); // Beep duration
+    }
 
-        // Function to detect motion within the square overlay
-        function detectMotionWithinSquare(imageData) {
-            // Define coordinates for the square overlay
-            const squareX = Math.floor(video.videoWidth * 0.2); // Adjust x-coordinate of the square
-            const squareY = Math.floor(video.videoHeight * 0.2); // Adjust y-coordinate of the square
-            const squareWidth = Math.floor(video.videoWidth * 0.6); // Adjust width of the square
-            const squareHeight = Math.floor(video.videoHeight * 0.6); // Adjust height of the square
+    // Function to handle device orientation changes
+    function handleOrientation(event) {
+        var x = event.beta;
+        var y = event.gamma;
+        var z = event.alpha;
 
-            // Compare pixel differences within the square area only
-            for (let y = squareY; y < squareY + squareHeight; y++) {
-                for (let x = squareX; x < squareX + squareWidth; x++) {
-                    // Get pixel index
-                    const index = (x + y * video.videoWidth) * 4;
+        if (lastX !== null && lastY !== null && lastZ !== null) {
+            var deltaX = Math.abs(x - lastX);
+            var deltaY = Math.abs(y - lastY);
+            var deltaZ = Math.abs(z - lastZ);
 
-                    // Check pixel difference for motion detection
-                    // You can adjust this condition based on your requirements
-                    if (imageData[index] < 100 || imageData[index + 1] < 100 || imageData[index + 2] < 100) {
-                        return true; // Motion detected
-                    }
-                }
-            }
-
-            return false; // No motion detected
-        }
-
-        // Function to update motion status display
-        function updateMotionStatus() {
-            if (motionDetected) {
-                motionStatus.textContent = 'Motion detected within square!';
-                raiseVolume(); // Raise volume when motion detected
-                playBeepSound(); // Play beep sound
+            if (deltaX > 10 || deltaY > 10 || deltaZ > 10) { // Adjust sensitivity as needed
+                document.getElementById("status").innerHTML = "Motion detected!";
+                playBeep();
             } else {
-                motionStatus.textContent = 'Waiting for motion within square...';
-                lowerVolume(); // Lower volume when motion not detected
+                document.getElementById("status").innerHTML = "Waiting for motion...";
             }
         }
 
-        // Function to play beep sound
-        function playBeepSound() {
-            beepSound.play();
-        }
+        lastX = x;
+        lastY = y;
+        lastZ = z;
+    }
 
-        // Function to raise volume
-        function raiseVolume() {
-            motionSound.volume = 1.0; // Max volume
-            audioControl.src = "audio_on.png"; // Change icon to indicate audio is on
-        }
-
-        // Function to lower volume
-        function lowerVolume() {
-            motionSound.volume = 0.1; // Lower volume
-            audioControl.src = "audio_off.png"; // Change icon to indicate audio is off
-        }
-
-        // Variables to store previous image data
-        let previousImageData = null;
-
-        // Function to update motion detection and status
-        function updateMotionDetection() {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
-
-            motionDetected = detectMotionWithinSquare(imageData);
-            updateMotionStatus();
-
-            if (!motionDetected) {
-                // If no motion detected within the square, reset motion status
-                motionDetected = false;
-            }
-        }
-
-        // Access the camera stream
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); // Use front camera (selfie)
-                video.srcObject = stream;
-                video.play();
-                // Update motion detection and status periodically (every 200 milliseconds)
-                setInterval(updateMotionDetection, 200);
-
-                // Toggle audio control
-                audioControl.addEventListener('click', () => {
-                    if (motionSound.paused) {
-                        motionSound.play();
-                        raiseVolume(); // Raise volume if audio is turned on
-                    } else {
-                        motionSound.pause();
-                        lowerVolume(); // Lower volume if audio is turned off
-                    }
-                });
-            } catch (error) {
-                console.error('Error accessing the camera: ', error);
-            }
-        }
-
-        // Start the camera when the document is loaded
-        document.addEventListener('DOMContentLoaded', startCamera);
-    </script>
+    // Start listening for device orientation changes
+    window.addEventListener('deviceorientation', handleOrientation);
+</script>
 </body>
 </html>
