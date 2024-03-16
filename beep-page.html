@@ -28,6 +28,9 @@
             width: 40%;
             height: 40%;
             border: 2px solid blue;
+            resize: both;
+            overflow: auto;
+            cursor: pointer;
         }
 
         #motionText {
@@ -66,6 +69,58 @@
                 .catch(error => {
                     console.error('Error accessing the camera:', error);
                 });
+
+            // Make the box resizable and movable
+            let isResizing = false;
+            let isDragging = false;
+            let startX, startY, startWidth, startHeight;
+
+            box.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX - box.offsetLeft;
+                startY = e.clientY - box.offsetTop;
+            });
+
+            box.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            box.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const newLeft = e.clientX - startX;
+                const newTop = e.clientY - startY;
+                box.style.left = `${newLeft}px`;
+                box.style.top = `${newTop}px`;
+            });
+
+            box.addEventListener('mouseenter', () => {
+                box.style.cursor = 'move';
+            });
+
+            box.addEventListener('mouseleave', () => {
+                box.style.cursor = 'pointer';
+            });
+
+            box.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isResizing = true;
+                startWidth = box.offsetWidth;
+                startHeight = box.offsetHeight;
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isResizing = false;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const width = startWidth + e.clientX - startX;
+                const height = startHeight + e.clientY - startY;
+                box.style.width = `${width}px`;
+                box.style.height = `${height}px`;
+            });
         }
 
         async function detectAndDraw(model, video, ctx, box, motionText) {
