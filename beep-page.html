@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Head Tracking</title>
+    <title>Human Tracking</title>
     <style>
         #videoCanvas {
             position: absolute;
@@ -27,14 +27,14 @@
     <canvas id="overlayCanvas"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script>
         async function run() {
             const video = document.getElementById('videoCanvas');
             const overlayCanvas = document.getElementById('overlayCanvas');
             const ctx = overlayCanvas.getContext('2d');
 
-            const model = await tf.loadGraphModel('https://tfhub.dev/mediapipe/tfjs-model/face_landmark_detection/1/default/1');
+            const model = await cocoSsd.load();
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(stream => {
                     video.srcObject = stream;
@@ -49,25 +49,22 @@
         }
 
         async function detectAndDraw(model, video, ctx) {
-            const predictions = await model.estimateFaces({
-                input: video,
-                returnTensors: false,
-                flipHorizontal: false
-            });
+            const predictions = await model.detect(video);
 
             // Clear previous drawings
             ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-            // Draw a red box around each detected head
-            if (predictions.length > 0) {
-                const face = predictions[0]; // Assuming only one face is detected
-                const boundingBox = face.boundingBox;
-                ctx.beginPath();
-                ctx.lineWidth = '4';
-                ctx.strokeStyle = 'red';
-                ctx.rect(boundingBox.topLeft[0], boundingBox.topLeft[1], boundingBox.bottomRight[0] - boundingBox.topLeft[0], boundingBox.bottomRight[1] - boundingBox.topLeft[1]);
-                ctx.stroke();
-            }
+            // Draw a red box around each detected person
+            predictions.forEach(prediction => {
+                if (prediction.class === 'person') {
+                    const [x, y, width, height] = prediction.bbox;
+                    ctx.beginPath();
+                    ctx.lineWidth = '4';
+                    ctx.strokeStyle = 'red';
+                    ctx.rect(x, y, width, height);
+                    ctx.stroke();
+                }
+            });
 
             // Repeat the process
             requestAnimationFrame(() => detectAndDraw(model, video, ctx));
