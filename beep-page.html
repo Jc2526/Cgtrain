@@ -151,7 +151,7 @@
         // Access the camera stream
         async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
                 video.play();
                 // Update motion detection and status periodically (every 200 milliseconds)
