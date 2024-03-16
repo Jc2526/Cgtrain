@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distance Measurement with iPhone Camera</title>
+    <title>Distance Measurement with iPhone Camera using WebRTC</title>
 </head>
 <body>
-    <h1>Distance Measurement with iPhone Camera</h1>
+    <h1>Distance Measurement with iPhone Camera using WebRTC</h1>
     <video id="video" width="640" height="480" autoplay></video>
     <canvas id="canvas" width="640" height="480"></canvas>
     <button onclick="captureImage()">Capture Image</button>
@@ -28,7 +28,7 @@
         }
         loadModel();
 
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 video.srcObject = stream;
             })
