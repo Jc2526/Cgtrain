@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Tracking</title>
+    <title>Head Tracking</title>
     <style>
         #videoCanvas {
             position: absolute;
@@ -27,14 +27,14 @@
     <canvas id="overlayCanvas"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
     <script>
         async function run() {
             const video = document.getElementById('videoCanvas');
             const overlayCanvas = document.getElementById('overlayCanvas');
             const ctx = overlayCanvas.getContext('2d');
 
-            const model = await cocoSsd.load();
+            const model = await tf.loadGraphModel('https://tfhub.dev/mediapipe/tfjs-model/face_landmark_detection/1/default/1');
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(stream => {
                     video.srcObject = stream;
@@ -49,22 +49,26 @@
         }
 
         async function detectAndDraw(model, video, ctx) {
-            const predictions = await model.detect(video);
+            const predictions = await model.estimateFaces({
+                input: video,
+                returnTensors: false,
+                flipHorizontal: false
+            });
 
             // Clear previous drawings
             ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-            // Draw a red box around each detected person
-            predictions.forEach(prediction => {
-                if (prediction.class === 'person') {
-                    const [x, y, width, height] = prediction.bbox;
+            // Draw a red dot at the center of each detected face (head)
+            if (predictions.length > 0) {
+                predictions.forEach(face => {
+                    const landmarks = face.scaledMesh;
+                    const nose = landmarks[4]; // Assuming the fifth landmark represents the nose
                     ctx.beginPath();
-                    ctx.lineWidth = '4';
-                    ctx.strokeStyle = 'red';
-                    ctx.rect(x, y, width, height);
-                    ctx.stroke();
-                }
-            });
+                    ctx.fillStyle = 'red';
+                    ctx.arc(nose[0], nose[1], 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            }
 
             // Repeat the process
             requestAnimationFrame(() => detectAndDraw(model, video, ctx));
