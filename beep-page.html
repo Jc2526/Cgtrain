@@ -155,6 +155,11 @@
 
             motionDetected = detectMotionWithinSquare(imageData);
             updateMotionStatus();
+
+            if (!motionDetected) {
+                // If no motion detected within the square, reset motion status
+                motionDetected = false;
+            }
         }
 
         // Access the camera stream
