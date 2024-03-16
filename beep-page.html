@@ -63,7 +63,7 @@
         let soundOn = false;
         let beep = new Audio('beep.mp3');
         beep.loop = true; // Play audio continuously
-        beep.volume = 0.1; // Initial volume
+        beep.volume = 0.01; // Initial volume (very quiet)
 
         async function run() {
             const video = document.getElementById('videoCanvas');
@@ -205,7 +205,7 @@
                 if (motionDetected) {
                     beep.volume = 1; // Increase volume
                 } else {
-                    beep.volume = 0.1; // Set back to quiet
+                    beep.volume = 0.01; // Set back to quiet
                 }
             } else {
                 beep.volume = 0; // Mute if sound is off
