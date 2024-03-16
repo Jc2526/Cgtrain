@@ -40,6 +40,14 @@
             left: 10px;
             font-size: 18px;
         }
+
+        #toggleSoundButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            padding: 5px 10px;
+        }
     </style>
 </head>
 <body>
@@ -47,10 +55,15 @@
     <canvas id="overlayCanvas"></canvas>
     <div id="box"></div>
     <div id="motionText">Motion</div>
+    <button id="toggleSoundButton" onclick="toggleSound()">Toggle Sound</button>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script>
+        let soundOn = false;
+        let beep = new Audio('https://freesound.org/data/previews/553/553378_13705344-lq.mp3');
+        beep.volume = 0.1;
+
         async function run() {
             const video = document.getElementById('videoCanvas');
             const overlayCanvas = document.getElementById('overlayCanvas');
@@ -186,6 +199,14 @@
             // Update motion text based on detection
             motionText.textContent = motionDetected ? 'Motion Detected' : 'Motion';
 
+            // Play beep sound if enabled and motion is detected
+            if (soundOn && motionDetected) {
+                beep.volume = 1; // Increase volume
+                beep.play();
+            } else {
+                beep.volume = 0.1; // Set back to quiet
+            }
+
             // Repeat the process
             requestAnimationFrame(() => detectAndDraw(model, video, ctx, box, motionText));
         }
@@ -195,6 +216,10 @@
                      rect1.left > rect2.right ||
                      rect1.bottom < rect2.top ||
                      rect1.top > rect2.bottom);
+        }
+
+        function toggleSound() {
+            soundOn = !soundOn;
         }
 
         run();
