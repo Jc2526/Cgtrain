@@ -30,6 +30,7 @@
             padding-top: 56.25%; /* 16:9 Aspect Ratio (responsive video) */
             overflow: hidden;
             border-radius: 10px;
+            background: #000; /* Background color for the video feed */
         }
         #video {
             position: absolute;
@@ -51,6 +52,15 @@
             left: 10px;
             cursor: pointer;
         }
+        #overlay {
+            position: absolute;
+            top: 20%; /* Adjust the position of the square vertically */
+            left: 20%; /* Adjust the position of the square horizontally */
+            width: 60%; /* Adjust the width of the square */
+            height: 60%; /* Adjust the height of the square */
+            border: 2px solid red; /* Border style of the square */
+            pointer-events: none; /* Ensure clicks pass through the overlay */
+        }
     </style>
 </head>
 <body>
@@ -58,6 +68,7 @@
         <h1>Motion Detector</h1>
         <div id="videoContainer">
             <video id="video" autoplay playsinline></video>
+            <div id="overlay"></div> <!-- Add overlay div for the square -->
         </div>
         <p id="motionStatus">Motion Status: Waiting for motion...</p>
         <img id="audioControl" src="audio_off.png" alt="Audio Control">
@@ -76,41 +87,39 @@
         const audioControl = document.getElementById('audioControl');
         let motionDetected = false;
 
-        // Function to detect motion in the captured image data
-        function detectMotion(imageData) {
-            // Compare current image data with previous image data to detect changes
-            if (previousImageData) {
-                let totalDiff = 0;
-                for (let i = 0; i < imageData.length; i += 4) {
-                    // Calculate the difference between pixel values
-                    const deltaR = Math.abs(imageData[i] - previousImageData[i]);
-                    const deltaG = Math.abs(imageData[i + 1] - previousImageData[i + 1]);
-                    const deltaB = Math.abs(imageData[i + 2] - previousImageData[i + 2]);
+        // Function to detect motion within the square overlay
+        function detectMotionWithinSquare(imageData) {
+            // Define coordinates for the square overlay
+            const squareX = Math.floor(video.videoWidth * 0.2); // Adjust x-coordinate of the square
+            const squareY = Math.floor(video.videoHeight * 0.2); // Adjust y-coordinate of the square
+            const squareWidth = Math.floor(video.videoWidth * 0.6); // Adjust width of the square
+            const squareHeight = Math.floor(video.videoHeight * 0.6); // Adjust height of the square
 
-                    // Accumulate total difference
-                    totalDiff += deltaR + deltaG + deltaB;
+            // Compare pixel differences within the square area only
+            for (let y = squareY; y < squareY + squareHeight; y++) {
+                for (let x = squareX; x < squareX + squareWidth; x++) {
+                    // Get pixel index
+                    const index = (x + y * video.videoWidth) * 4;
+
+                    // Check pixel difference for motion detection
+                    // You can adjust this condition based on your requirements
+                    if (imageData[index] < 100 || imageData[index + 1] < 100 || imageData[index + 2] < 100) {
+                        return true; // Motion detected
+                    }
                 }
-                // Calculate average difference per pixel
-                const avgDiff = totalDiff / (imageData.length / 4);
-
-                // Set motion detection threshold (lower threshold for higher sensitivity)
-                const threshold = 10; // Adjust this value for sensitivity
-
-                // If average difference exceeds threshold, consider it as motion
-                motionDetected = avgDiff > threshold;
-            } else {
-                motionDetected = false;
             }
+
+            return false; // No motion detected
         }
 
         // Function to update motion status display
         function updateMotionStatus() {
             if (motionDetected) {
-                motionStatus.textContent = 'Motion detected!';
+                motionStatus.textContent = 'Motion detected within square!';
                 raiseVolume(); // Raise volume when motion detected
                 playBeepSound(); // Play beep sound
             } else {
-                motionStatus.textContent = 'Waiting for motion...';
+                motionStatus.textContent = 'Waiting for motion within square...';
                 lowerVolume(); // Lower volume when motion not detected
             }
         }
@@ -144,9 +153,8 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
 
-            detectMotion(imageData);
+            motionDetected = detectMotionWithinSquare(imageData);
             updateMotionStatus();
-            previousImageData = imageData;
         }
 
         // Access the camera stream
