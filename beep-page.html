@@ -63,7 +63,7 @@
         let soundOn = false;
         let beep = new Audio('beep.mp3');
         beep.loop = true; // Play audio continuously
-        beep.volume = 0; // Initial volume (completely silent)
+        beep.volume = 0.5; // Initial volume (adjust as needed)
 
         async function run() {
             const video = document.getElementById('videoCanvas');
@@ -135,6 +135,7 @@
                     audioControl.textContent = 'Sound: On';
                 } else {
                     beep.volume = 0;
+                    beep.pause(); // Pause the sound
                     audioControl.textContent = 'Sound: Off';
                 }
             });
@@ -217,8 +218,9 @@
             // Adjust volume based on motion detection
             if (soundOn && motionDetected) {
                 beep.volume = 1;
+                beep.play();
             } else {
-                beep.volume = 0;
+                beep.pause();
             }
 
             // Repeat the process
