@@ -56,7 +56,7 @@
             });
 
             // Clear previous drawings
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
             // Draw a red box around each detected head
             if (predictions.length > 0) {
