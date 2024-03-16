@@ -61,9 +61,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script>
         let soundOn = false;
-        let beep = new Audio('beep.mp3');
+        let beep = new Audio('https://freesound.org/data/previews/553/553378_13705344-lq.mp3');
         beep.loop = true; // Play audio continuously
-        beep.volume = 0.01; // Initial volume (very quiet)
+        beep.volume = 0; // Initial volume (completely silent)
 
         async function run() {
             const video = document.getElementById('videoCanvas');
@@ -205,7 +205,7 @@
                 if (motionDetected) {
                     beep.volume = 1; // Increase volume
                 } else {
-                    beep.volume = 0.01; // Set back to quiet
+                    beep.volume = 0; // Set back to completely silent
                 }
             } else {
                 beep.volume = 0; // Mute if sound is off
