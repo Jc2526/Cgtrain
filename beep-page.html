@@ -94,7 +94,7 @@
                 const avgDiff = totalDiff / (imageData.length / 4);
 
                 // Set motion detection threshold (lower threshold for higher sensitivity)
-                const threshold = 20; // Adjust this value for sensitivity
+                const threshold = 10; // Adjust this value for sensitivity
 
                 // If average difference exceeds threshold, consider it as motion
                 motionDetected = avgDiff > threshold;
