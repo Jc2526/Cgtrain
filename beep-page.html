@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Tracking</title>
+    <title>Human Tracking with Audio</title>
     <style>
         #videoCanvas {
             position: absolute;
@@ -41,12 +41,11 @@
             font-size: 18px;
         }
 
-        #toggleSoundButton {
+        #audioControl {
             position: absolute;
             top: 10px;
-            left: 10px;
-            font-size: 18px;
-            padding: 5px 10px;
+            right: 10px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -55,14 +54,15 @@
     <canvas id="overlayCanvas"></canvas>
     <div id="box"></div>
     <div id="motionText">Motion</div>
-    <button id="toggleSoundButton" onclick="toggleSound()">Toggle Sound</button>
+    <img id="audioControl" src="audio_off.png" alt="Audio Control">
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script>
         let soundOn = false;
-        let beep = new Audio('beep.mp3');
+        let beep = new Audio('https://freesound.org/data/previews/553/553378_13705344-lq.mp3');
         beep.loop = true; // Play audio continuously
+        beep.volume = 0; // Initial volume (completely silent)
 
         async function run() {
             const video = document.getElementById('videoCanvas');
@@ -70,6 +70,7 @@
             const ctx = overlayCanvas.getContext('2d');
             const box = document.getElementById('box');
             const motionText = document.getElementById('motionText');
+            const audioControl = document.getElementById('audioControl');
 
             const model = await cocoSsd.load();
             navigator.mediaDevices.getUserMedia({ video: true })
@@ -122,6 +123,19 @@
             function stopResize() {
                 window.removeEventListener('mousemove', resize);
                 window.removeEventListener('touchmove', resize);
+            }
+
+            // Function to toggle sound
+            function toggleSound() {
+                soundOn = !soundOn;
+                if (soundOn) {
+                    beep.play();
+                    audioControl.src = "audio_on.png";
+                } else {
+                    beep.pause();
+                    beep.currentTime = 0;
+                    audioControl.src = "audio_off.png";
+                }
             }
 
             // Make the box movable
@@ -199,12 +213,11 @@
             // Update motion text based on detection
             motionText.textContent = motionDetected ? 'Motion Detected' : 'Motion';
 
-            // Adjust playback of beep sound based on motion detection
+            // Adjust volume and beep sound based on motion detection
             if (soundOn && motionDetected) {
-                beep.play(); // Start playing the audio
+                beep.volume = 1;
             } else {
-                beep.pause(); // Pause the audio
-                beep.currentTime = 0; // Reset audio to the beginning
+                beep.volume = 0;
             }
 
             // Repeat the process
@@ -218,10 +231,7 @@
                      rect1.top > rect2.bottom);
         }
 
-        function toggleSound() {
-            soundOn = !soundOn;
-        }
-
+        // Start the application
         run();
     </script>
 </body>
