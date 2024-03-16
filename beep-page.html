@@ -45,6 +45,7 @@
             position: absolute;
             top: 10px;
             right: 10px;
+            font-size: 18px;
             cursor: pointer;
         }
     </style>
@@ -54,13 +55,13 @@
     <canvas id="overlayCanvas"></canvas>
     <div id="box"></div>
     <div id="motionText">Motion</div>
-    <img id="audioControl" src="audio_off.png" alt="Audio Control">
+    <div id="audioControl">Sound: Off</div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script>
         let soundOn = false;
-        let beep = new Audio('beep.mp3');
+        let beep = new Audio('https://freesound.org/data/previews/553/553378_13705344-lq.mp3');
         beep.loop = true; // Play audio continuously
         beep.volume = 0; // Initial volume (completely silent)
 
@@ -129,12 +130,11 @@
             function toggleSound() {
                 soundOn = !soundOn;
                 if (soundOn) {
-                    beep.play();
-                    audioControl.src = "audio_on.png";
+                    beep.volume = 1;
+                    audioControl.textContent = 'Sound: On';
                 } else {
-                    beep.pause();
-                    beep.currentTime = 0;
-                    audioControl.src = "audio_off.png";
+                    beep.volume = 0;
+                    audioControl.textContent = 'Sound: Off';
                 }
             }
 
@@ -212,13 +212,6 @@
 
             // Update motion text based on detection
             motionText.textContent = motionDetected ? 'Motion Detected' : 'Motion';
-
-            // Adjust volume and beep sound based on motion detection
-            if (soundOn && motionDetected) {
-                beep.volume = 1;
-            } else {
-                beep.volume = 0;
-            }
 
             // Repeat the process
             requestAnimationFrame(() => detectAndDraw(model, video, ctx, box, motionText));
