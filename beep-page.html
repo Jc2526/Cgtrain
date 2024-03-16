@@ -17,15 +17,17 @@
 <button onclick="startTracking()">Start Tracking</button>
 <button onclick="resetTracking()">Reset</button>
 <script>
-    var startPosition = null;
+    var lastPosition = null;
     var totalDistance = 0;
 
     function success(position) {
-        if (startPosition !== null) {
-            var distance = calculateDistance(startPosition.coords.latitude, startPosition.coords.longitude, position.coords.latitude, position.coords.longitude);
+        if (lastPosition !== null) {
+            var distance = calculateDistance(lastPosition.coords.latitude, lastPosition.coords.longitude, position.coords.latitude, position.coords.longitude);
             totalDistance += distance;
-            document.getElementById("status").innerHTML = "Total distance moved: " + totalDistance.toFixed(2) + " kilometers";
+            var distanceMoved = calculateDistance(lastPosition.coords.latitude, lastPosition.coords.longitude, position.coords.latitude, position.coords.longitude);
+            document.getElementById("status").innerHTML = "Total distance moved: " + totalDistance.toFixed(2) + " kilometers<br>Distance moved since last update: " + distanceMoved.toFixed(2) + " kilometers";
         }
+        lastPosition = position;
     }
 
     function error(err) {
@@ -34,13 +36,13 @@
 
     function startTracking() {
         navigator.geolocation.watchPosition(success, error);
-        startPosition = null;
+        lastPosition = null;
         totalDistance = 0;
         document.getElementById("status").innerHTML = "Tracking started...";
     }
 
     function resetTracking() {
-        startPosition = null;
+        lastPosition = null;
         totalDistance = 0;
         document.getElementById("status").innerHTML = "Tracking reset...";
     }
