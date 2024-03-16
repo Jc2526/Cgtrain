@@ -94,7 +94,7 @@
                 const avgDiff = totalDiff / (imageData.length / 4);
 
                 // Set motion detection threshold (lower threshold for higher sensitivity)
-                const threshold = 5; // Adjust this value for higher sensitivity (lower threshold)
+                const threshold = 20; // Adjust this value for sensitivity
 
                 // If average difference exceeds threshold, consider it as motion
                 motionDetected = avgDiff > threshold;
@@ -152,7 +152,7 @@
         // Access the camera stream
         async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); // Use front camera (selfie)
                 video.srcObject = stream;
                 video.play();
                 // Update motion detection and status periodically (every 200 milliseconds)
