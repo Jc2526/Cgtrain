@@ -55,7 +55,7 @@
     <canvas id="overlayCanvas"></canvas>
     <div id="box"></div>
     <div id="motionText">Motion</div>
-    <div id="audioControl">Sound: Off</div>
+    <button id="audioControl">Toggle Sound</button>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
@@ -127,16 +127,17 @@
             }
 
             // Function to toggle sound
-            function toggleSound() {
+            audioControl.addEventListener('click', () => {
                 soundOn = !soundOn;
                 if (soundOn) {
                     beep.volume = 1;
+                    beep.play(); // Play sound when the button is clicked
                     audioControl.textContent = 'Sound: On';
                 } else {
                     beep.volume = 0;
                     audioControl.textContent = 'Sound: Off';
                 }
-            }
+            });
 
             // Make the box movable
             box.addEventListener('mousedown', startDrag);
@@ -212,6 +213,13 @@
 
             // Update motion text based on detection
             motionText.textContent = motionDetected ? 'Motion Detected' : 'Motion';
+
+            // Adjust volume based on motion detection
+            if (soundOn && motionDetected) {
+                beep.volume = 1;
+            } else {
+                beep.volume = 0;
+            }
 
             // Repeat the process
             requestAnimationFrame(() => detectAndDraw(model, video, ctx, box, motionText));
