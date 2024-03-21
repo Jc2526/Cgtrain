@@ -54,7 +54,7 @@
     <video id="videoCanvas" autoplay playsinline></video>
     <canvas id="overlayCanvas"></canvas>
     <div id="box"></div>
-    <div id="motionText">MotionDetected</div>
+    <div id="motionText">Motion</div>
     <button id="audioControl">Toggle Sound</button>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -213,15 +213,14 @@
             });
 
             // Update motion text based on detection
-            motionText.textContent = motionDetected ? 'Motion ' : 'Motion Detected';
+            motionText.textContent = motionDetected ? 'Motion Detected' : 'Motion';
 
             // Adjust volume based on motion detection
             if (soundOn && motionDetected) {
-                  beep.pause();
-            } else {
-
                 beep.volume = 1;
                 beep.play();
+            } else {
+                beep.pause();
             }
 
             // Repeat the process
