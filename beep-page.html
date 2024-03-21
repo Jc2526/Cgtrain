@@ -54,7 +54,7 @@
     <video id="videoCanvas" autoplay playsinline></video>
     <canvas id="overlayCanvas"></canvas>
     <div id="box"></div>
-    <div id="motionText">Motion</div>
+    <div id="motionText">MotionDetected</div>
     <button id="audioControl">Toggle Sound</button>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -189,38 +189,39 @@
 
             // Draw a red box around each detected person
             predictions.forEach(prediction => {
-      if (prediction.class === 'person') {
-          const [x, y, width, height] = prediction.bbox;
-          ctx.beginPath();
-          ctx.lineWidth = '4';
-          ctx.strokeStyle = 'red';
-          ctx.rect(x, y, width, height);
-          ctx.stroke();
+                if (prediction.class === 'person') {
+                    const [x, y, width, height] = prediction.bbox;
+                    ctx.beginPath();
+                    ctx.lineWidth = '4';
+                    ctx.strokeStyle = 'red';
+                    ctx.rect(x, y, width, height);
+                    ctx.stroke();
 
-          // Check if the person's bounding box does not intersect with the box
-          const boxRect = box.getBoundingClientRect();
-          const personRect = {
-              left: x,
-              top: y,
-              right: x + width,
-              bottom: y + height
-          };
+                    // Check if the person's bounding box intersects with the box
+                    const boxRect = box.getBoundingClientRect();
+                    const personRect = {
+                        left: x,
+                        top: y,
+                        right: x + width,
+                        bottom: y + height
+                    };
 
-          if (!isIntersect(personRect, boxRect)) {
-              motionDetected = true;
-          }
-      }
-  });
+                    if (isIntersect(personRect, boxRect)) {
+                        motionDetected = true;
+                    }
+                }
+            });
 
             // Update motion text based on detection
-            motionText.textContent = motionDetected ? 'Motion Detected' : 'Motion';
+            motionText.textContent = motionDetected ? 'Motion ' : 'Motion Detected';
 
             // Adjust volume based on motion detection
             if (soundOn && motionDetected) {
+                  beep.pause();
+            } else {
+
                 beep.volume = 1;
                 beep.play();
-            } else {
-                beep.pause();
             }
 
             // Repeat the process
