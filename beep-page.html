@@ -16,12 +16,22 @@
         top: 0;
         left: 0;
     }
+    #motion-overlay {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background-color: rgba(255, 255, 255, 0.5);
+        padding: 5px 10px;
+        font-size: 18px;
+        border-radius: 5px;
+    }
 </style>
 </head>
 <body>
 <div id="video-container">
     <video id="video" autoplay></video>
     <canvas id="canvas" width="640" height="480"></canvas>
+    <div id="motion-overlay">No Motion</div>
 </div>
 <script>
 // Get video element
@@ -61,6 +71,13 @@ function detectMotion() {
         if (diff > motionThreshold) {
             motionDetected = true;
         }
+    }
+    // Update motion status overlay
+    const motionOverlay = document.getElementById('motion-overlay');
+    if (motionDetected) {
+        motionOverlay.textContent = 'Motion Detected';
+    } else {
+        motionOverlay.textContent = 'No Motion';
     }
     // Display motion status (for demonstration)
     if (motionDetected && !isRecording) {
