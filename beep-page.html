@@ -1,127 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Motion Detection App</title>
-<style>
-    #video-container {
-        position: relative;
-        width: 640px;
-        height: 480px;
-        margin: 0 auto;
-    }
-    #video, #canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-    #motion-overlay {
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        background-color: rgba(255, 255, 255, 0.5);
-        padding: 5px 10px;
-        font-size: 18px;
-        border-radius: 5px;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human Tracking with Audio</title>
+    <style>
+        #videoCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #box {
+            position: absolute;
+            top: 30%;
+            left: 30%;
+            width: 40%;
+            height: 40%;
+            border: 2px solid blue;
+            resize: both;
+            overflow: auto;
+            cursor: pointer;
+            touch-action: none; /* Disable browser's default touch action */
+        }
+
+        #motionText {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 18px;
+        }
+
+        #audioControl {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-<div id="video-container">
-    <video id="video" autoplay></video>
-    <canvas id="canvas" width="640" height="480"></canvas>
-    <div id="motion-overlay">No Motion</div>
-</div>
-<script>
-// Get video element
-const video = document.getElementById('video');
-// Get canvas element for motion detection
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-// Variables for motion detection
-let lastImageData;
-let motionThreshold = 1000000; // Adjust as needed
-let isRecording = false;
-let recordStartTime;
-const RECORDING_DURATION = 10; // in seconds
-// Access the camera
-navigator.mediaDevices.getUserMedia({ video: true })
-    .then((stream) => {
-        video.srcObject = stream;
-        video.play();
-        // Start motion detection
-        detectMotion();
-    })
-    .catch((error) => {
-        console.error('Error accessing the camera: ', error);
-    });
+    <video id="videoCanvas" autoplay playsinline></video>
+    <canvas id="overlayCanvas"></canvas>
+    <div id="box"></div>
+    <div id="motionText">Motion</div>
+    <button id="audioControl">Toggle Sound</button>
 
-// Function to detect motion
-function detectMotion() {
-    // Draw current video frame onto the canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    // Get image data from canvas
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    // Initialize motion flag
-    let motionDetected = false;
-    // Compare current image data with previous frame
-    if (lastImageData) {
-        const diff = pixelDiff(lastImageData.data, imageData.data);
-        if (diff > motionThreshold) {
-            motionDetected = true;
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script>
+        let soundOn = false;
+        let beep = new Audio('beep.mp3');
+        beep.loop = true; // Play audio continuously
+        beep.volume = 0.5; // Initial volume (adjust as needed)
+
+        async function run() {
+            const video = document.getElementById('videoCanvas');
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            const ctx = overlayCanvas.getContext('2d');
+            const box = document.getElementById('box');
+            const motionText = document.getElementById('motionText');
+            const audioControl = document.getElementById('audioControl');
+
+            const model = await cocoSsd.load();
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        detectAndDraw(model, video, ctx, box, motionText);
+                    };
+                })
+                .catch(error => {
+                    console.error('Error accessing the camera:', error);
+                });
+
+            // Make the box resizable
+            box.addEventListener('mousedown', startResize);
+            box.addEventListener('touchstart', startResize);
+
+            function startResize(e) {
+                e.preventDefault();
+                window.addEventListener('mousemove', resize);
+                window.addEventListener('touchmove', resize);
+                window.addEventListener('mouseup', stopResize);
+                window.addEventListener('touchend', stopResize);
+                if (e.type === 'mousedown') {
+                    startX = e.clientX;
+                    startY = e.clientY;
+                } else {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                }
+                startWidth = parseInt(document.defaultView.getComputedStyle(box).width);
+                startHeight = parseInt(document.defaultView.getComputedStyle(box).height);
+            }
+
+            function resize(e) {
+                if (e.type === 'mousemove') {
+                    const width = startWidth + e.clientX - startX;
+                    const height = startHeight + e.clientY - startY;
+                    box.style.width = `${width}px`;
+                    box.style.height = `${height}px`;
+                } else {
+                    const width = startWidth + e.touches[0].clientX - startX;
+                    const height = startHeight + e.touches[0].clientY - startY;
+                    box.style.width = `${width}px`;
+                    box.style.height = `${height}px`;
+                }
+            }
+
+            function stopResize() {
+                window.removeEventListener('mousemove', resize);
+                window.removeEventListener('touchmove', resize);
+            }
+
+            // Function to toggle sound
+            audioControl.addEventListener('click', () => {
+                soundOn = !soundOn;
+                if (soundOn) {
+                    beep.volume = 1;
+                    beep.play(); // Play sound when the button is clicked
+                    audioControl.textContent = 'Sound: On';
+                } else {
+                    beep.volume = 0;
+                    beep.pause(); // Pause the sound
+                    audioControl.textContent = 'Sound: Off';
+                }
+            });
+
+            // Make the box movable
+            box.addEventListener('mousedown', startDrag);
+            box.addEventListener('touchstart', startDrag);
+
+            function startDrag(e) {
+                e.preventDefault();
+                window.addEventListener('mousemove', drag);
+                window.addEventListener('touchmove', drag);
+                window.addEventListener('mouseup', stopDrag);
+                window.addEventListener('touchend', stopDrag);
+                if (e.type === 'mousedown') {
+                    startX = e.clientX - box.offsetLeft;
+                    startY = e.clientY - box.offsetTop;
+                } else {
+                    startX = e.touches[0].clientX - box.offsetLeft;
+                    startY = e.touches[0].clientY - box.offsetTop;
+                }
+            }
+
+            function drag(e) {
+                if (e.type === 'mousemove') {
+                    const newLeft = e.clientX - startX;
+                    const newTop = e.clientY - startY;
+                    box.style.left = `${newLeft}px`;
+                    box.style.top = `${newTop}px`;
+                } else {
+                    const newLeft = e.touches[0].clientX - startX;
+                    const newTop = e.touches[0].clientY - startY;
+                    box.style.left = `${newLeft}px`;
+                    box.style.top = `${newTop}px`;
+                }
+            }
+
+            function stopDrag() {
+                window.removeEventListener('mousemove', drag);
+                window.removeEventListener('touchmove', drag);
+            }
         }
-    }
-    // Update motion status overlay
-    const motionOverlay = document.getElementById('motion-overlay');
-    if (motionDetected) {
-        motionOverlay.textContent = 'Motion Detected';
-    } else {
-        motionOverlay.textContent = 'No Motion';
-    }
-    // Display motion status (for demonstration)
-    if (motionDetected && !isRecording) {
-        console.log('Motion detected! Recording started.');
-        startRecording();
-    }
-    // Check if recording duration has passed
-    if (isRecording && (Date.now() - recordStartTime) >= RECORDING_DURATION * 1000) {
-        console.log('Recording stopped.');
-        stopRecording();
-    }
-    // Save current image data for comparison
-    lastImageData = imageData;
-    // Repeat the process
-    requestAnimationFrame(detectMotion);
-}
 
-// Function to calculate pixel difference between two image data arrays
-function pixelDiff(data1, data2) {
-    let diff = 0;
-    for (let i = 0; i < data1.length; i += 4) {
-        const brightness1 = (data1[i] + data1[i + 1] + data1[i + 2]) / 3;
-        const brightness2 = (data2[i] + data2[i + 1] + data2[i + 2]) / 3;
-        diff += Math.abs(brightness1 - brightness2);
-    }
-    return diff;
-}
+        async function detectAndDraw(model, video, ctx, box, motionText) {
+            const predictions = await model.detect(video);
 
-// Function to start video recording
-function startRecording() {
-    isRecording = true;
-    recordStartTime = Date.now();
-    // You can add code here to start recording the video
-    // For simplicity, I'll just log a message
-    console.log('Recording started.');
-}
+            // Clear previous drawings
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-// Function to stop video recording
-function stopRecording() {
-    isRecording = false;
-    // You can add code here to stop recording the video
-    // For simplicity, I'll just log a message
-    console.log('Recording stopped.');
-}
-</script>
+            let motionDetected = false;
+
+            // Draw a red box around each detected person
+            predictions.forEach(prediction => {
+                if (prediction.class === 'person') {
+                    const [x, y, width, height] = prediction.bbox;
+                    ctx.beginPath();
+                    ctx.lineWidth = '4';
+                    ctx.strokeStyle = 'red';
+                    ctx.rect(x, y, width, height);
+                    ctx.stroke();
+
+                    // Check if the person's bounding box intersects with the box
+                    const boxRect = box.getBoundingClientRect();
+                    const personRect = {
+                        left: x,
+                        top: y,
+                        right: x + width,
+                        bottom: y + height
+                    };
+
+                    if (isIntersect(personRect, boxRect)) {
+                        motionDetected = true;
+                    }
+                }
+            });
+
+            // Update motion text based on detection
+            motionText.textContent = motionDetected ? 'Motion ' : 'Motion Detected';
+
+            // Adjust volume based on motion detection
+            if (soundOn && motionDetected) {
+                beep.pause();
+            } else {
+            ;
+                beep.volume = 1;
+                beep.currentTime = 0; // Reset audio to start from the beginning
+                beep.play();
+            }
+
+            // Repeat the process
+            requestAnimationFrame(() => detectAndDraw(model, video, ctx, box, motionText));
+        }
+
+        function isIntersect(rect1, rect2) {
+            return !(rect1.right < rect2.left ||
+                     rect1.left > rect2.right ||
+                     rect1.bottom < rect2.top ||
+                     rect1.top > rect2.bottom);
+        }
+
+        // Start the application
+        run();
+    </script>
 </body>
 </html>
